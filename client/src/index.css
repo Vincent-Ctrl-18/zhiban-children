@@ -1,0 +1,538 @@
+:root {
+  /* 主色调 - 温暖、阳光 */
+  --primary-color: #FF9F43;
+  --primary-hover: #e8903c;
+  --primary-light: #FFF5E6;
+  
+  /* 辅助色 */
+  --success-color: #1dd1a1;
+  --info-color: #48dbfb;
+  --warning-color: #feca57;
+  --danger-color: #ff6b6b;
+  
+  /* 中性色 */
+  --text-main: #2d3436;
+  --text-secondary: #636e72;
+  --text-light: #b2bec3;
+  --bg-color: #f4f7f6;
+  --card-bg: #ffffff;
+  --border-color: #dfe6e9;
+
+  /* 阴影 */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 32px rgba(255, 159, 67, 0.15);
+  
+  /* 圆角 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-color);
+  background-image: 
+    radial-gradient(at 10% 10%, rgba(255, 159, 67, 0.05) 0px, transparent 50%),
+    radial-gradient(at 90% 90%, rgba(72, 219, 251, 0.05) 0px, transparent 50%);
+  min-height: 100vh;
+  color: var(--text-main);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #dfe6e9;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b2bec3;
+}
+
+/* 通用卡片样式 */
+.ant-card {
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-sm);
+  border: none !important;
+  transition: all 0.3s ease;
+}
+
+.ant-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* 按钮圆角优化 */
+.ant-btn {
+  border-radius: var(--radius-sm) !important;
+  box-shadow: none !important;
+}
+
+.ant-btn-primary {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.ant-btn-primary:hover {
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+}
+
+/* 输入框优化 */
+.ant-input, .ant-input-password, .ant-select-selector {
+  border-radius: var(--radius-sm) !important;
+}
+
+/* 选择身份页面样式 */
+.role-selection-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #fffbf5 0%, #f0faff 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 装饰背景圆 */
+.role-selection-page::before,
+.role-selection-page::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 0;
+}
+
+.role-selection-page::before {
+  width: 400px;
+  height: 400px;
+  background: rgba(255, 159, 67, 0.1);
+  top: -100px;
+  left: -100px;
+}
+
+.role-selection-page::after {
+  width: 300px;
+  height: 300px;
+  background: rgba(72, 219, 251, 0.1);
+  bottom: -50px;
+  right: -50px;
+}
+
+.role-selection-page .logo-section {
+  text-align: center;
+  margin-bottom: 60px;
+  position: relative;
+  z-index: 1;
+}
+
+.role-selection-page .logo {
+  width: 100px;
+  height: 100px;
+  margin-bottom: 24px;
+  filter: drop-shadow(0 10px 20px rgba(255, 159, 67, 0.2));
+}
+
+.role-selection-page h1 {
+  font-size: 36px;
+  color: var(--text-main);
+  margin-bottom: 12px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.role-selection-page .subtitle {
+  font-size: 16px;
+  color: var(--text-secondary);
+  max-width: 540px;
+  line-height: 1.8;
+  margin: 0 auto;
+}
+
+.role-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  max-width: 1200px;
+  width: 100%;
+  margin-bottom: 60px;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 1024px) {
+  .role-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .role-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.role-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-lg);
+  padding: 40px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.role-card:hover {
+  transform: translateY(-10px);
+  background: #fff;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
+}
+
+.role-card .icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin-bottom: 24px;
+  transition: all 0.3s ease;
+  background: #f8f9fa;
+}
+
+.role-card:hover .icon {
+  transform: scale(1.1);
+}
+
+.role-card h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text-main);
+}
+
+.role-card p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* 简单的装饰背景条 */
+.decorative-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background: var(--primary-color);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.role-card:hover .decorative-bar {
+  opacity: 1;
+}
+
+.role-card .icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.role-card h3 {
+  font-size: 20px;
+  color: #2D3436;
+  margin-bottom: 8px;
+}
+
+.role-card p {
+  font-size: 14px;
+  color: #636e72;
+  line-height: 1.5;
+}
+
+/* 主布局样式 */
+.main-layout {
+  min-height: 100vh;
+}
+
+.main-layout .ant-layout-sider {
+  background: linear-gradient(180deg, #FF9F43 0%, #FF7F50 100%);
+}
+
+.main-layout .ant-menu {
+  background: transparent;
+}
+
+.main-layout .ant-menu-item {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.main-layout .ant-menu-item-selected {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: white;
+}
+
+.main-layout .ant-menu-item:hover {
+  color: white;
+}
+
+.logo-container {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+
+.logo-container img {
+  height: 40px;
+  margin-right: 8px;
+}
+
+.logo-container span {
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.main-content {
+  padding: 24px;
+  min-height: calc(100vh - 64px);
+}
+
+/* 统计卡片 */
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card .stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  margin-bottom: 16px;
+}
+
+.stat-card .stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #2D3436;
+  line-height: 1;
+}
+
+.stat-card .stat-label {
+  font-size: 14px;
+  color: #636e72;
+  margin-top: 8px;
+}
+
+/* 表单页面 */
+.form-page {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.form-page .page-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.form-page .page-header h2 {
+  font-size: 20px;
+  color: #2D3436;
+  margin: 0;
+}
+
+/* 安全检查卡片 */
+.safety-check-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+}
+
+.safety-check-item:hover {
+  background: #fff5e6;
+}
+
+.safety-check-item .check-label {
+  flex: 1;
+  font-size: 15px;
+  color: #2D3436;
+}
+
+/* 资源卡片 */
+.resource-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  border-left: 4px solid #FF9F43;
+}
+
+.resource-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.resource-card .resource-type {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #fff5e6;
+  color: #FF9F43;
+  border-radius: 20px;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.resource-card h4 {
+  font-size: 16px;
+  color: #2D3436;
+  margin-bottom: 8px;
+}
+
+.resource-card p {
+  font-size: 14px;
+  color: #636e72;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .role-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .role-selection-page h1 {
+    font-size: 24px;
+  }
+  
+  .main-content {
+    padding: 16px;
+  }
+}
+
+ / *   �Nh��v�~��aSGr7h_  * / 
+ . s t a t - c a r d   . a n t - c a r d - b o d y   { 
+     d i s p l a y :   f l e x ; 
+     a l i g n - i t e m s :   c e n t e r ; 
+     p a d d i n g :   2 4 p x ; 
+ } 
+ 
+ . s t a t - i c o n   { 
+     w i d t h :   5 6 p x ; 
+     h e i g h t :   5 6 p x ; 
+     b o r d e r - r a d i u s :   1 6 p x ; 
+     d i s p l a y :   f l e x ; 
+     a l i g n - i t e m s :   c e n t e r ; 
+     j u s t i f y - c o n t e n t :   c e n t e r ; 
+     f o n t - s i z e :   2 8 p x ; 
+     m a r g i n - r i g h t :   1 6 p x ; 
+     f l e x - s h r i n k :   0 ; 
+ } 
+ 
+ . s t a t - c a r d   . a n t - s t a t i s t i c   { 
+     f l e x :   1 ; 
+ } 
+ 
+ . s t a t - c a r d   . a n t - s t a t i s t i c - t i t l e   { 
+     f o n t - s i z e :   1 4 p x ; 
+     c o l o r :   v a r ( - - t e x t - s e c o n d a r y ) ; 
+     m a r g i n - b o t t o m :   4 p x ; 
+ } 
+ 
+ . s t a t - c a r d   . a n t - s t a t i s t i c - c o n t e n t   { 
+     f o n t - s i z e :   2 4 p x ; 
+     f o n t - w e i g h t :   7 0 0 ; 
+     c o l o r :   v a r ( - - t e x t - m a i n ) ; 
+ } 
+  
+ 
+ / *   ��L a y o u t ̀of�f���QB o d y �vn�S̀of  * / 
+ . a n t - l a y o u t   { 
+     b a c k g r o u n d :   t r a n s p a r e n t   ! i m p o r t a n t ; 
+ } 
+ . a n t - l a y o u t - s i d e r   { 
+     b a c k g r o u n d :   # f f f   ! i m p o r t a n t ; 
+     b o x - s h a d o w :   2 p x   0   8 p x   0   r g b a ( 2 9 , 3 5 , 4 1 , . 0 5 ) ; 
+ } 
+ . a n t - m e n u - d a r k   { 
+     b a c k g r o u n d :   # f f f   ! i m p o r t a n t ; 
+     c o l o r :   v a r ( - - t e x t - m a i n )   ! i m p o r t a n t ; 
+ } 
+ . a n t - m e n u - i t e m - s e l e c t e d   { 
+     b a c k g r o u n d - c o l o r :   v a r ( - - p r i m a r y - l i g h t )   ! i m p o r t a n t ; 
+     c o l o r :   v a r ( - - p r i m a r y - c o l o r )   ! i m p o r t a n t ; 
+ } 
+ . l o g o - c o n t a i n e r   { 
+     h e i g h t :   6 4 p x ; 
+     d i s p l a y :   f l e x ; 
+     a l i g n - i t e m s :   c e n t e r ; 
+     j u s t i f y - c o n t e n t :   c e n t e r ; 
+     f o n t - s i z e :   1 8 p x ; 
+     f o n t - w e i g h t :   b o l d ; 
+     c o l o r :   v a r ( - - p r i m a r y - c o l o r ) ; 
+     b a c k g r o u n d :   # f f f ; 
+     b o r d e r - b o t t o m :   1 p x   s o l i d   # f 0 f 0 f 0 ; 
+ } 
+  
+ 
+ / *   �OYT a b l e �V�[R̀of�  * / 
+ . a n t - t a b l e - c e l l - f i x - l e f t , 
+ . a n t - t a b l e - c e l l - f i x - r i g h t   { 
+     b a c k g r o u n d :   # f f f   ! i m p o r t a n t ; 
+ } 
+  
+ 
