@@ -196,6 +196,7 @@ function InstitutionDashboard() {
           loading={loading}
           pagination={false}
           locale={{ emptyText: '暂无活动记录' }}
+          scroll={{ x: 'max-content' }}
         />
       </Card>
 

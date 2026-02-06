@@ -222,6 +222,7 @@ function ChildrenManage() {
         loading={loading}
         pagination={{ pageSize: 10 }}
         locale={{ emptyText: '暂无儿童信息' }}
+        scroll={{ x: 'max-content' }}
       />
 
       <Modal

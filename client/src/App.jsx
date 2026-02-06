@@ -120,12 +120,20 @@ function App() {
   const currentMenuItems = menuConfig[user.role] || [];
 
   return (
-    <Layout className="main-layout">
+    <Layout className="main-layout" style={{ minHeight: '100vh' }}>
       <Sider 
         trigger={null} 
         collapsible 
         collapsed={collapsed}
         width={220}
+        breakpoint="lg"
+        collapsedWidth="0"
+        onBreakpoint={(broken) => {
+          if (broken) setCollapsed(true);
+        }}
+        style={{
+          zIndex: 100, 
+        }}
       >
         <div className="logo-container">
           {!collapsed && 

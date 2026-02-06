@@ -42,11 +42,13 @@ function Login({ onLogin }) {
     <div className="role-selection-page">
       <Card 
         style={{ 
-          width: 420, 
+          width: '100%',
+          maxWidth: 420, 
           boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
           borderRadius: 20,
           border: 'none',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          margin: '0 10px'
         }}
         bodyStyle={{ padding: 40 }}
       >

@@ -202,3 +202,50 @@ SELECT id, title, photos FROM activities;
 - [ ] 分页加载
 - [ ] 消息推送通知
 - [ ] 移动端适配优化
+
+## 2026年2月4日更新 - GitHub托管与公网访问
+
+### 新增文件
+
+| 文件 | 说明 |
+|------|------|
+| `.gitignore` | Git忽略配置，排除 node_modules、.env、uploads 等 |
+| `server/.env.example` | 环境变量模板，供协作者参考配置 |
+
+### 修改内容
+
+#### 1. vite.config.js - 支持局域网和公网访问
+```javascript
+server: {
+  port: 5173,
+  host: '0.0.0.0',  // 允许局域网访问
+  allowedHosts: ['localhost', '.trycloudflare.com'],  // 允许 Cloudflare Tunnel 域名
+  proxy: { ... }
+}
+```
+
+#### 2. start.bat - 新增 Cloudflare Tunnel 选项
+- 启动后询问是否启用公网访问
+- 输入 Y 自动启动 Cloudflare Tunnel
+- 公网地址显示在新窗口中
+
+#### 3. DEVELOPMENT_NOTES.md - 清理敏感信息
+- 移除数据库密码和本地绝对路径
+- 改用通用的启动命令
+
+### GitHub 仓库
+
+- **地址**: https://github.com/Vincent-Ctrl-18/zhiban-children
+- **分支**: main
+
+### Cloudflare Tunnel 使用方法
+
+1. 安装（已完成）: `winget install Cloudflare.cloudflared`
+2. 启动隧道: 
+   ```bash
+   cloudflared tunnel --url http://localhost:5173
+   ```
+3. 获取公网地址: 控制台输出 `https://xxx.trycloudflare.com`
+
+> ⚠️ Quick Tunnel 每次启动生成新的随机域名，适合临时演示
+

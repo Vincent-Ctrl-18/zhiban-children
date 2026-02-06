@@ -293,6 +293,7 @@ function DailyCheckin() {
         loading={loading}
         pagination={false}
         locale={{ emptyText: '暂无儿童信息' }}
+        scroll={{ x: 'max-content' }}
       />
 
       {/* 批量签到弹窗 */}

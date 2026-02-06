@@ -84,9 +84,11 @@ function Register({ onLogin }) {
     <div className="role-selection-page">
       <Card 
         style={{ 
-          width: 450, 
+          width: '100%',
+          maxWidth: 450, 
           boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-          borderRadius: 16
+          borderRadius: 16,
+          margin: '0 10px'
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: 24 }}>

@@ -153,6 +153,7 @@ function NotificationManage() {
         loading={loading}
         pagination={{ pageSize: 10 }}
         locale={{ emptyText: '暂无通知' }}
+        scroll={{ x: 'max-content' }}
       />
 
       <Modal

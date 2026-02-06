@@ -297,6 +297,7 @@ function ActivityRecord() {
         loading={loading}
         pagination={{ pageSize: 10 }}
         locale={{ emptyText: '暂无活动记录' }}
+        scroll={{ x: 'max-content' }}
       />
 
       <Modal
