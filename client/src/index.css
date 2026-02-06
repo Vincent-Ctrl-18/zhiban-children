@@ -976,13 +976,18 @@ body {
   padding: 48px 0 64px;
 }
 .role-cards {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  max-width: 1200px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+  max-width: 1100px;
   width: 100%;
   position: relative;
   z-index: 1;
+}
+.role-cards > * {
+  flex: 0 0 calc((100% - 48px) / 3);
+  max-width: calc((100% - 48px) / 3);
 }
 .role-card {
   background: #fff;
@@ -1203,7 +1208,11 @@ body {
   .stats-number { font-size: 36px; }
 
   .features-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
-  .role-cards { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .role-cards { gap: 16px; }
+  .role-cards > * {
+    flex: 0 0 calc((100% - 16px) / 2);
+    max-width: calc((100% - 16px) / 2);
+  }
 
   .section-tag { font-size: 17px; letter-spacing: 3px; padding: 6px 22px; }
   .section-title { font-size: 32px; }
@@ -1259,7 +1268,11 @@ body {
   .feature-card { padding: 28px 20px; }
 
   .role-section { padding: 36px 0 48px; }
-  .role-cards { grid-template-columns: 1fr; gap: 12px; }
+  .role-cards { gap: 12px; }
+  .role-cards > * {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
   .role-card { padding: 28px 20px; }
 
   .cta-section { padding: 64px 16px; background-attachment: scroll; }
@@ -1288,3 +1301,249 @@ body {
 
 /* Ensure images don't overflow */
 img { max-width: 100%; height: auto; }
+
+/* ============================================
+   学生端样式
+   ============================================ */
+
+/* 学生仪表盘 */
+.student-dashboard {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* 学生欢迎卡片 */
+.student-welcome-card {
+  border-radius: var(--radius-lg) !important;
+  background: linear-gradient(135deg, #FFF5E6 0%, #FFE5B4 50%, #ffe0cc 100%);
+  border: none;
+  margin-bottom: 4px;
+}
+.student-welcome-card .ant-card-body {
+  padding: 28px;
+}
+
+/* 学生功能卡片 */
+.student-func-card {
+  border-radius: var(--radius-lg) !important;
+  height: 220px;
+  transition: all 0.35s var(--ease-out-expo);
+  cursor: pointer;
+}
+.student-func-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.1);
+}
+.student-func-card .ant-card-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+}
+
+/* ============================================
+   聊天界面通用样式
+   ============================================ */
+.chat-companion-page,
+.homework-help-page,
+.learning-report-page {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.homework-chat-card,
+.chat-companion-card {
+  border-radius: var(--radius-lg) !important;
+  overflow: hidden;
+}
+
+.chat-messages {
+  background: #f9fafb;
+  scroll-behavior: smooth;
+}
+
+/* 消息气泡 */
+.chat-msg {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  align-items: flex-start;
+}
+.chat-msg-user {
+  flex-direction: row-reverse;
+}
+.chat-msg-user .chat-bubble {
+  background: var(--primary-color);
+  color: #fff;
+  border-radius: 16px 4px 16px 16px;
+}
+.chat-msg-ai .chat-bubble {
+  background: #fff;
+  color: var(--text-main);
+  border-radius: 4px 16px 16px 16px;
+  border: 1px solid #f0f0f0;
+}
+.chat-bubble {
+  max-width: 70%;
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.7;
+  box-shadow: var(--shadow-sm);
+  word-break: break-word;
+}
+.chat-time {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-top: 4px;
+  text-align: right;
+}
+.chat-msg-user .chat-time {
+  color: rgba(255,255,255,0.7);
+}
+.chat-avatar {
+  flex-shrink: 0;
+}
+
+/* 学习报告内容样式 */
+.report-content {
+  font-size: 15px;
+  color: var(--text-main);
+}
+
+/* 响应式：学生端 */
+@media (max-width: 768px) {
+  .student-func-card {
+    height: auto;
+    min-height: 180px;
+  }
+  .chat-bubble {
+    max-width: 85%;
+  }
+}
+
+/* ============================================
+   开发者后台样式
+   ============================================ */
+.admin-login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f0f1a;
+  position: relative;
+  overflow: hidden;
+}
+.admin-login-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 30%, rgba(108, 92, 231, 0.15) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 80% 70%, rgba(72, 219, 251, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+.admin-login-card {
+  width: 100%;
+  max-width: 420px;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.3) !important;
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(8px);
+}
+.admin-login-card .ant-card-body {
+  padding: 40px 36px 32px;
+}
+.admin-login-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  font-size: 28px;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(108, 92, 231, 0.3);
+}
+.admin-login-btn {
+  height: 46px !important;
+  background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%) !important;
+  border: none !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease !important;
+}
+.admin-login-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(108, 92, 231, 0.35) !important;
+}
+.admin-login-footer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-light);
+  padding-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* 开发者后台侧边栏 override */
+.admin-login-page .ant-card:hover {
+  box-shadow: 0 24px 80px rgba(0,0,0,0.3) !important;
+  transform: none;
+}
+
+/* 开发者后台面板 */
+.ant-layout-sider {
+  transition: all 0.25s var(--ease-out-expo) !important;
+}
+
+/* Admin 今日概况渐变卡片 */
+.admin-login-page ~ .ant-layout .ant-statistic-title {
+  font-size: 13px;
+}
+
+/* Admin 用户分布小卡片 */
+.admin-user-card {
+  border-radius: var(--radius-md) !important;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+.admin-user-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Admin 资源状态小数字 */
+.admin-resource-stat {
+  text-align: center;
+  padding: 12px 0;
+  transition: all 0.25s ease;
+  border-radius: var(--radius-sm);
+}
+.admin-resource-stat:hover {
+  background: var(--bg-color);
+}
+
+/* ============================================
+   响应式补充
+   ============================================ */
+@media (max-width: 576px) {
+  .student-dashboard .page-title-bar h2 {
+    font-size: 18px;
+  }
+  .student-welcome-card .ant-card-body {
+    padding: 20px;
+  }
+  .admin-login-card .ant-card-body {
+    padding: 28px 20px 24px;
+  }
+  .chat-companion-page .page-title-bar,
+  .homework-help-page .page-title-bar,
+  .learning-report-page .page-title-bar {
+    margin-bottom: 16px;
+  }
+}

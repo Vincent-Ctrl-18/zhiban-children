@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const { testConnection } = require('./config/database');
 
@@ -16,6 +16,8 @@ const statisticsRoutes = require('./routes/statistics');
 const notificationsRoutes = require('./routes/notifications');
 const parentsRoutes = require('./routes/parents');
 const uploadRoutes = require('./routes/upload');
+const aiRoutes = require('./routes/ai');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -39,6 +41,8 @@ app.use('/api/statistics', statisticsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/parents', parentsRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {

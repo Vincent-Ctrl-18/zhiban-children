@@ -8,7 +8,8 @@ import {
   HomeOutlined,
   ArrowLeftOutlined,
   TeamOutlined,
-  KeyOutlined
+  KeyOutlined,
+  ReadOutlined,
 } from '@ant-design/icons';
 import { authApi } from '../services/api';
 
@@ -19,6 +20,7 @@ const roleNames = {
   institution: '托管机构',
   resource: '资源方',
   government: '政府/捐赠方',
+  student: '学生',
 };
 
 const orgTypeOptions = {
@@ -244,6 +246,36 @@ function Register({ onLogin }) {
                 placeholder="所属机构/组织名称" 
               />
             </Form.Item>
+          )}
+
+          {/* 学生需要填写学校和年级 */}
+          {role === 'student' && (
+            <>
+              <Form.Item
+                name="organization"
+                rules={[{ required: true, message: '请输入就读学校' }]}
+              >
+                <Input 
+                  prefix={<ReadOutlined />} 
+                  placeholder="就读学校名称" 
+                />
+              </Form.Item>
+              <Form.Item
+                name="grade"
+              >
+                <Select placeholder="选择年级（可选）">
+                  <Select.Option value="一年级">一年级</Select.Option>
+                  <Select.Option value="二年级">二年级</Select.Option>
+                  <Select.Option value="三年级">三年级</Select.Option>
+                  <Select.Option value="四年级">四年级</Select.Option>
+                  <Select.Option value="五年级">五年级</Select.Option>
+                  <Select.Option value="六年级">六年级</Select.Option>
+                  <Select.Option value="初一">初一</Select.Option>
+                  <Select.Option value="初二">初二</Select.Option>
+                  <Select.Option value="初三">初三</Select.Option>
+                </Select>
+              </Form.Item>
+            </>
           )}
 
           <Form.Item>

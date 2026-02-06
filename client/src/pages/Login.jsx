@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Form, Input, Button, Card, message, Avatar } from 'antd';
-import { UserOutlined, LockOutlined, ArrowLeftOutlined, TeamOutlined, HomeOutlined, GiftOutlined, BarChartOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, ArrowLeftOutlined, TeamOutlined, HomeOutlined, GiftOutlined, BarChartOutlined, ReadOutlined } from '@ant-design/icons';
 import { authApi } from '../services/api';
 
 const roleConfig = {
@@ -9,6 +9,7 @@ const roleConfig = {
   institution: { name: '托管机构', icon: <HomeOutlined />, color: '#1dd1a1', bg: '#e3f9f3' },
   resource: { name: '资源方', icon: <GiftOutlined />, color: '#48dbfb', bg: '#e8f9fe' },
   government: { name: '政府/捐赠方', icon: <BarChartOutlined />, color: '#a55eea', bg: '#f3eaff' },
+  student: { name: '学生', icon: <ReadOutlined />, color: '#ff6348', bg: '#ffede9' },
 };
 
 function Login({ onLogin }) {

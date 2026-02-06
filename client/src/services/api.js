@@ -120,4 +120,59 @@ export const parentsApi = {
   getList: (params) => api.get('/parents', { params }),
 };
 
+// 管理员后台API
+export const adminApi = {
+  login: (data) => api.post('/admin/login', data),
+  getStatistics: () => {
+    const token = localStorage.getItem('adminToken');
+    return api.get('/admin/statistics', { headers: { Authorization: `Bearer ${token}` } });
+  },
+  getResources: (params) => {
+    const token = localStorage.getItem('adminToken');
+    return api.get('/admin/resources', { params, headers: { Authorization: `Bearer ${token}` } });
+  },
+  approveResource: (id, status, rejectReason) => {
+    const token = localStorage.getItem('adminToken');
+    return api.post(`/admin/resources/${id}/approve`, { status, rejectReason }, { headers: { Authorization: `Bearer ${token}` } });
+  },
+  getApiKey: () => {
+    const token = localStorage.getItem('adminToken');
+    return api.get('/admin/api-key', { headers: { Authorization: `Bearer ${token}` } });
+  },
+  updateApiKey: (apiKey) => {
+    const token = localStorage.getItem('adminToken');
+    return api.post('/admin/api-key', { apiKey }, { headers: { Authorization: `Bearer ${token}` } });
+  },
+  testApiKey: () => {
+    const token = localStorage.getItem('adminToken');
+    return api.post('/admin/api-key/test', {}, { headers: { Authorization: `Bearer ${token}` }, timeout: 30000 });
+  },
+  getPrompts: () => {
+    const token = localStorage.getItem('adminToken');
+    return api.get('/admin/prompts', { headers: { Authorization: `Bearer ${token}` } });
+  },
+  updatePrompt: (type, data) => {
+    const token = localStorage.getItem('adminToken');
+    return api.put(`/admin/prompts/${type}`, data, { headers: { Authorization: `Bearer ${token}` } });
+  },
+  resetPrompt: (type) => {
+    const token = localStorage.getItem('adminToken');
+    return api.post('/admin/prompts/reset', { type }, { headers: { Authorization: `Bearer ${token}` } });
+  },
+  resetAllPrompts: () => {
+    const token = localStorage.getItem('adminToken');
+    return api.post('/admin/prompts/reset', {}, { headers: { Authorization: `Bearer ${token}` } });
+  },
+};
+
+// AI 智能服务API
+export const aiApi = {
+  // 智能作业辅导
+  homeworkHelp: (data) => api.post('/ai/homework', data, { timeout: 60000 }),
+  // 个性化学习报告
+  learningReport: (data) => api.post('/ai/learning-report', data, { timeout: 60000 }),
+  // 谈心伙伴
+  chat: (data) => api.post('/ai/chat', data, { timeout: 30000 }),
+};
+
 export default api;

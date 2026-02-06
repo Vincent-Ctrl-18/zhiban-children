@@ -14,6 +14,7 @@ import {
   MailOutlined,
   EnvironmentOutlined,
   LeftOutlined,
+  ReadOutlined,
 } from '@ant-design/icons';
 import { Button } from 'antd';
 
@@ -49,6 +50,14 @@ const roles = [
     description: '查看项目影响力数据、服务统计和资源对接情况',
     color: '#a55eea',
     bg: '#f3eaff',
+  },
+  {
+    key: 'student',
+    icon: <ReadOutlined />,
+    title: '学生',
+    description: 'AI智能作业辅导、个性化学习报告、温暖谈心陪伴',
+    color: '#ff6348',
+    bg: '#ffede9',
   },
 ];
 
@@ -237,6 +246,7 @@ function RoleSelection() {
           <span className="nav-link" onClick={() => handleRoleSelect('institution')}>托管机构</span>
           <span className="nav-link" onClick={() => handleRoleSelect('resource')}>资源方</span>
           <span className="nav-link" onClick={() => handleRoleSelect('government')}>基金会</span>
+          <span className="nav-link" onClick={() => handleRoleSelect('student')}>学生端</span>
           <Button className="signup-btn" onClick={scrollToRoles}>立即加入</Button>
         </div>
         <div className="mobile-menu-btn" onClick={scrollToRoles}>
@@ -395,6 +405,7 @@ function RoleSelection() {
               <span onClick={() => handleRoleSelect('institution')}>托管机构</span>
               <span onClick={() => handleRoleSelect('resource')}>资源对接</span>
               <span onClick={() => handleRoleSelect('government')}>数据看板</span>
+              <span onClick={() => handleRoleSelect('student')}>学生端</span>
             </div>
             <div className="footer-col">
               <h4>关于我们</h4>

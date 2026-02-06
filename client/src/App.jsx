@@ -14,6 +14,10 @@ import {
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  BookOutlined,
+  FileTextOutlined,
+  HeartOutlined,
+  ReadOutlined,
 } from '@ant-design/icons';
 
 // 页面组件
@@ -30,6 +34,12 @@ import ParentDashboard from './pages/parent/Dashboard';
 import ResourceDashboard from './pages/resource/Dashboard';
 import ResourceRegister from './pages/resource/ResourceRegister';
 import GovernmentDashboard from './pages/government/Dashboard';
+import StudentDashboard from './pages/student/Dashboard';
+import HomeworkHelp from './pages/student/HomeworkHelp';
+import LearningReport from './pages/student/LearningReport';
+import ChatCompanion from './pages/student/ChatCompanion';
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminPanel from './pages/admin/AdminPanel';
 
 const { Header, Sider, Content } = Layout;
 
@@ -52,6 +62,12 @@ const menuConfig = {
   ],
   government: [
     { key: '/government', icon: <BarChartOutlined />, label: '数据看板' },
+  ],
+  student: [
+    { key: '/student', icon: <HomeOutlined />, label: '学习中心' },
+    { key: '/student/homework', icon: <BookOutlined />, label: '作业辅导' },
+    { key: '/student/report', icon: <FileTextOutlined />, label: '学习报告' },
+    { key: '/student/chat', icon: <HeartOutlined />, label: '谈心伙伴' },
   ],
 };
 
@@ -104,6 +120,35 @@ function App() {
       ]}
     />
   );
+
+  // 管理员登录处理
+  const handleAdminLogin = (userData, token) => {
+    localStorage.setItem('adminUser', JSON.stringify(userData));
+    localStorage.setItem('adminToken', token);
+    setUser(userData);
+  };
+
+  const handleAdminLogout = () => {
+    localStorage.removeItem('adminUser');
+    localStorage.removeItem('adminToken');
+    setUser(null);
+    message.success('已退出开发者后台');
+  };
+
+  // /admin 独立路由（不受普通登录态影响）
+  if (location.pathname.startsWith('/admin')) {
+    const adminUser = localStorage.getItem('adminUser');
+    const adminToken = localStorage.getItem('adminToken');
+    if (adminUser && adminToken) {
+      return <AdminPanel onLogout={handleAdminLogout} />;
+    }
+    return (
+      <Routes>
+        <Route path="/admin" element={<AdminLogin onAdminLogin={handleAdminLogin} />} />
+        <Route path="*" element={<Navigate to="/admin" replace />} />
+      </Routes>
+    );
+  }
 
   // 未登录时显示的页面
   if (!user) {
@@ -178,6 +223,7 @@ function App() {
               {user.role === 'parent' && '家长服务中心'}
               {user.role === 'resource' && '资源方服务中心'}
               {user.role === 'government' && '政府数据看板'}
+              {user.role === 'student' && '学生学习中心'}
             </span>
           </div>
           <Dropdown overlay={userMenu} placement="bottomRight">
@@ -211,6 +257,12 @@ function App() {
             
             {/* 政府路由 */}
             <Route path="/government" element={<GovernmentDashboard />} />
+            
+            {/* 学生路由 */}
+            <Route path="/student" element={<StudentDashboard />} />
+            <Route path="/student/homework" element={<HomeworkHelp />} />
+            <Route path="/student/report" element={<LearningReport />} />
+            <Route path="/student/chat" element={<ChatCompanion />} />
             
             {/* 默认重定向 */}
             <Route path="*" element={<Navigate to={`/${user.role}`} replace />} />
