@@ -102,9 +102,10 @@ function SafetyCheck() {
     <div className="form-page">
       <div className="page-header">
         <h2>
-          <SafetyOutlined style={{ marginRight: 8 }} />
+          <SafetyOutlined />
           每日安全检查打卡
         </h2>
+        <p className="page-subtitle">逐项确认场地、设施、消防等安全项目，确保儿童托管环境安全</p>
       </div>
 
       {alreadyChecked && (

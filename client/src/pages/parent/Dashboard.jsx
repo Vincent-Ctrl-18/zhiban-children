@@ -8,7 +8,8 @@ import {
   TeamOutlined,
   RightOutlined,
   UserOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
+  HeartOutlined
 } from '@ant-design/icons';
 import { childrenApi, activitiesApi, notificationsApi } from '../../services/api';
 
@@ -96,9 +97,9 @@ function ParentDashboard() {
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <Title level={2} style={{ marginBottom: 8, color: '#2d3436' }}>家长服务中心</Title>
-        <Text type="secondary">关注孩子成长的每一天</Text>
+      <div className="page-title-bar">
+        <h2><HeartOutlined />家长服务中心</h2>
+        <p className="page-subtitle">关注孩子成长的每一天</p>
       </div>
 
       {/* 孩子信息 */}

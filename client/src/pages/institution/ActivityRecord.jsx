@@ -3,7 +3,7 @@ import {
   Table, Button, Modal, Form, Input, Select, DatePicker, TimePicker,
   Space, Tag, message, Popconfirm, InputNumber, Upload, Image
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, PictureOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, PictureOutlined, CalendarOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { activitiesApi } from '../../services/api';
 
@@ -176,14 +176,13 @@ function ActivityRecord() {
       title: '活动名称',
       dataIndex: 'title',
       key: 'title',
-      width: 200,
-      align: 'center',
+      ellipsis: true,
     },
     {
       title: '类型',
       dataIndex: 'activity_type',
       key: 'activity_type',
-      width: 100,
+      width: 80,
       align: 'center',
       render: (type) => {
         const t = activityTypes.find(a => a.value === type) || activityTypes[3];
@@ -194,11 +193,10 @@ function ActivityRecord() {
       title: '日期',
       dataIndex: 'activity_date',
       key: 'activity_date',
-      width: 120,
+      width: 110,
       align: 'center',
       render: (date) => {
         if (!date) return '-';
-        // 转换为本地日期显示
         const d = new Date(date);
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       },
@@ -206,42 +204,44 @@ function ActivityRecord() {
     {
       title: '时间',
       key: 'time',
-      width: 150,
+      width: 120,
       align: 'center',
+      responsive: ['lg'],
       render: (_, record) => {
         if (record.start_time && record.end_time) {
-          return `${record.start_time.slice(0, 5)} - ${record.end_time.slice(0, 5)}`;
+          return `${record.start_time.slice(0, 5)}-${record.end_time.slice(0, 5)}`;
         }
         return record.start_time ? record.start_time.slice(0, 5) : '-';
       },
     },
     {
-      title: '参与人数',
+      title: '人数',
       dataIndex: 'participant_count',
       key: 'participant_count',
-      width: 100,
+      width: 70,
       align: 'center',
-      render: (count) => `${count || 0} 人`,
+      render: (count) => `${count || 0}`,
     },
     {
       title: '记录人',
       dataIndex: 'recorder_name',
       key: 'recorder_name',
-      width: 100,
+      width: 80,
       align: 'center',
+      responsive: ['xl'],
     },
     {
       title: '描述',
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
-      align: 'center',
+      responsive: ['lg'],
     },
     {
       title: '照片',
       dataIndex: 'photos',
       key: 'photos',
-      width: 100,
+      width: 70,
       align: 'center',
       render: (photos) => {
         const photoList = photos || [];
@@ -284,7 +284,10 @@ function ActivityRecord() {
   return (
     <div className="form-page">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>每日活动记录</h2>
+        <div>
+          <h2><CalendarOutlined />每日活动记录</h2>
+          <p className="page-subtitle">记录每日开展的各类活动，留存精彩瞬间</p>
+        </div>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>
           添加活动
         </Button>
@@ -297,7 +300,7 @@ function ActivityRecord() {
         loading={loading}
         pagination={{ pageSize: 10 }}
         locale={{ emptyText: '暂无活动记录' }}
-        scroll={{ x: 'max-content' }}
+        scroll={{ x: 900 }}
       />
 
       <Modal

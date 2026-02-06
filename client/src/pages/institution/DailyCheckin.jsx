@@ -244,7 +244,10 @@ function DailyCheckin() {
   return (
     <div className="form-page">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>每日签到管理</h2>
+        <div>
+          <h2><CheckCircleOutlined />每日签到管理</h2>
+          <p className="page-subtitle">记录儿童每日签到签退情况，确保安全管理</p>
+        </div>
         <Button type="primary" onClick={() => setBatchModalVisible(true)}>
           批量签到
         </Button>
@@ -253,35 +256,27 @@ function DailyCheckin() {
       {/* 统计卡片 */}
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col span={6}>
-          <Card size="small">
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 24, fontWeight: 'bold', color: '#2D3436' }}>{totalCount}</div>
-              <div style={{ color: '#636e72' }}>应到人数</div>
-            </div>
+          <Card size="small" className="mini-stat-card">
+            <div className="mini-stat-value" style={{ color: 'var(--text-main)' }}>{totalCount}</div>
+            <div className="mini-stat-label">应到人数</div>
           </Card>
         </Col>
         <Col span={6}>
-          <Card size="small">
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 24, fontWeight: 'bold', color: '#52c41a' }}>{checkedInCount}</div>
-              <div style={{ color: '#636e72' }}>已签到</div>
-            </div>
+          <Card size="small" className="mini-stat-card">
+            <div className="mini-stat-value" style={{ color: '#52c41a' }}>{checkedInCount}</div>
+            <div className="mini-stat-label">已签到</div>
           </Card>
         </Col>
         <Col span={6}>
-          <Card size="small">
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 24, fontWeight: 'bold', color: '#1890ff' }}>{checkedOutCount}</div>
-              <div style={{ color: '#636e72' }}>已签退</div>
-            </div>
+          <Card size="small" className="mini-stat-card">
+            <div className="mini-stat-value" style={{ color: '#1890ff' }}>{checkedOutCount}</div>
+            <div className="mini-stat-label">已签退</div>
           </Card>
         </Col>
         <Col span={6}>
-          <Card size="small">
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 24, fontWeight: 'bold', color: '#ff4d4f' }}>{absentCount}</div>
-              <div style={{ color: '#636e72' }}>缺勤</div>
-            </div>
+          <Card size="small" className="mini-stat-card">
+            <div className="mini-stat-value" style={{ color: '#ff4d4f' }}>{absentCount}</div>
+            <div className="mini-stat-label">缺勤</div>
           </Card>
         </Col>
       </Row>
@@ -293,7 +288,6 @@ function DailyCheckin() {
         loading={loading}
         pagination={false}
         locale={{ emptyText: '暂无儿童信息' }}
-        scroll={{ x: 'max-content' }}
       />
 
       {/* 批量签到弹窗 */}

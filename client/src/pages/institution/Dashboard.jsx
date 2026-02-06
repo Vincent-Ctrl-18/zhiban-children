@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Row, Col, Card, Statistic, Table, Tag, message, Modal, Typography, Button, Space, List, Avatar } from 'antd';
+import { Row, Col, Card, Table, Tag, message, Modal, Typography, Button, Space, List, Avatar } from 'antd';
 import {
   TeamOutlined,
   CheckCircleOutlined,
@@ -119,71 +119,63 @@ function InstitutionDashboard() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h2 style={{ margin: 0 }}>工作台</h2>
-        <Button 
-          type="primary" 
-          icon={<KeyOutlined />} 
-          onClick={showInviteCode}
-        >
-          邀请员工加入
-        </Button>
+      <div className="page-title-bar">
+        <div className="page-title-actions">
+          <h2><CalendarOutlined />工作台</h2>
+          <Button 
+            type="primary" 
+            icon={<KeyOutlined />} 
+            onClick={showInviteCode}
+          >
+            邀请员工加入
+          </Button>
+        </div>
+        <p className="page-subtitle">今日事务概览，一键管理儿童托管日常</p>
       </div>
       
-      <Row gutter={[24, 24]}>
-        <Col xs={24} sm={12} lg={6}>
+      <Row gutter={[16, 16]}>
+        <Col xs={12} sm={12} lg={6}>
           <Card className="stat-card">
             <div className="stat-icon" style={{ background: '#fff5e6' }}>
               <TeamOutlined style={{ color: '#FF9F43' }} />
             </div>
-            <Statistic
-              title="在册儿童"
-              value={stats.childrenCount}
-              suffix="人"
-              loading={loading}
-            />
+            <div className="stat-text">
+              <span className="stat-label">在册儿童</span>
+              <span className="stat-num">{loading ? '-' : stats.childrenCount}<small>人</small></span>
+            </div>
           </Card>
         </Col>
-        
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={12} sm={12} lg={6}>
           <Card className="stat-card">
             <div className="stat-icon" style={{ background: '#e6f7ff' }}>
               <CheckCircleOutlined style={{ color: '#1890ff' }} />
             </div>
-            <Statistic
-              title="今日签到"
-              value={stats.todayCheckin}
-              suffix={`/ ${stats.childrenCount} 人`}
-              loading={loading}
-            />
+            <div className="stat-text">
+              <span className="stat-label">今日签到</span>
+              <span className="stat-num">{loading ? '-' : `${stats.todayCheckin}/${stats.childrenCount}`}<small>人</small></span>
+            </div>
           </Card>
         </Col>
-        
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={12} sm={12} lg={6}>
           <Card className="stat-card">
             <div className="stat-icon" style={{ background: stats.safetyDone ? '#f6ffed' : '#fff2e8' }}>
               <SafetyOutlined style={{ color: stats.safetyDone ? '#52c41a' : '#fa8c16' }} />
             </div>
-            <Statistic
-              title="安全检查"
-              value={stats.safetyDone ? '已完成' : '待完成'}
-              valueStyle={{ color: stats.safetyDone ? '#52c41a' : '#fa8c16' }}
-              loading={loading}
-            />
+            <div className="stat-text">
+              <span className="stat-label">安全检查</span>
+              <span className="stat-num" style={{ color: stats.safetyDone ? '#52c41a' : '#fa8c16' }}>{loading ? '-' : (stats.safetyDone ? '已完成' : '待检查')}</span>
+            </div>
           </Card>
         </Col>
-        
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={12} sm={12} lg={6}>
           <Card className="stat-card">
             <div className="stat-icon" style={{ background: '#f9f0ff' }}>
               <CalendarOutlined style={{ color: '#722ed1' }} />
             </div>
-            <Statistic
-              title="累计活动"
-              value={stats.monthActivities}
-              suffix="次"
-              loading={loading}
-            />
+            <div className="stat-text">
+              <span className="stat-label">累计活动</span>
+              <span className="stat-num">{loading ? '-' : stats.monthActivities}<small>次</small></span>
+            </div>
           </Card>
         </Col>
       </Row>
@@ -196,7 +188,6 @@ function InstitutionDashboard() {
           loading={loading}
           pagination={false}
           locale={{ emptyText: '暂无活动记录' }}
-          scroll={{ x: 'max-content' }}
         />
       </Card>
 

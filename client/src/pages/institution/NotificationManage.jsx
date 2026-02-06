@@ -3,7 +3,7 @@ import {
   Table, Button, Modal, Form, Input, Select, 
   Space, Tag, message, Popconfirm, Switch 
 } from 'antd';
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, BellOutlined } from '@ant-design/icons';
 import { notificationsApi } from '../../services/api';
 
 const { Option } = Select;
@@ -75,14 +75,13 @@ function NotificationManage() {
       title: '标题',
       dataIndex: 'title',
       key: 'title',
-      width: 200,
-      align: 'center',
+      ellipsis: true,
     },
     {
       title: '类型',
       dataIndex: 'type',
       key: 'type',
-      width: 120,
+      width: 100,
       align: 'center',
       render: (type) => {
         const t = notificationTypes.find(n => n.value === type) || notificationTypes[3];
@@ -94,35 +93,37 @@ function NotificationManage() {
       dataIndex: 'content',
       key: 'content',
       ellipsis: true,
-      align: 'center',
+      responsive: ['lg'],
     },
     {
       title: '家长可见',
       dataIndex: 'is_public',
       key: 'is_public',
-      width: 100,
+      width: 90,
       align: 'center',
+      responsive: ['md'],
       render: (isPublic) => isPublic ? <Tag color="green">是</Tag> : <Tag>否</Tag>,
     },
     {
       title: '发布人',
       dataIndex: 'creator_name',
       key: 'creator_name',
-      width: 100,
+      width: 90,
       align: 'center',
+      responsive: ['md'],
     },
     {
       title: '发布时间',
       dataIndex: 'created_at',
       key: 'created_at',
-      width: 180,
+      width: 110,
       align: 'center',
-      render: (time) => time ? time.slice(0, 19).replace('T', ' ') : '-',
+      render: (time) => time ? time.slice(0, 10) : '-',
     },
     {
       title: '操作',
       key: 'action',
-      width: 100,
+      width: 80,
       align: 'center',
       render: (_, record) => (
         <Popconfirm
@@ -140,7 +141,10 @@ function NotificationManage() {
   return (
     <div className="form-page">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>通知管理</h2>
+        <div>
+          <h2><BellOutlined />通知管理</h2>
+          <p className="page-subtitle">发布和管理机构通知，及时向家长传达重要信息</p>
+        </div>
         <Button type="primary" icon={<PlusOutlined />} onClick={showModal}>
           发布通知
         </Button>
@@ -153,7 +157,6 @@ function NotificationManage() {
         loading={loading}
         pagination={{ pageSize: 10 }}
         locale={{ emptyText: '暂无通知' }}
-        scroll={{ x: 'max-content' }}
       />
 
       <Modal

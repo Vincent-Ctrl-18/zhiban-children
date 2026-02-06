@@ -3,7 +3,7 @@ import {
   Table, Button, Modal, Form, Input, Select, DatePicker, 
   Space, Tag, message, Popconfirm, Card, Divider 
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, UserOutlined, TeamOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { childrenApi, parentsApi } from '../../services/api';
 
@@ -142,24 +142,26 @@ function ChildrenManage() {
       dataIndex: 'school',
       key: 'school',
       ellipsis: true,
+      responsive: ['lg'],
     },
     {
       title: '监护人',
       dataIndex: 'guardian_name',
       key: 'guardian_name',
-      width: 100,
+      width: 90,
     },
     {
       title: '联系电话',
       dataIndex: 'guardian_phone',
       key: 'guardian_phone',
-      width: 130,
+      width: 120,
+      responsive: ['md'],
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 100,
+      width: 80,
       render: (status) => {
         const statusMap = {
           active: { text: '在册', color: 'green' },
@@ -199,7 +201,10 @@ function ChildrenManage() {
   return (
     <div className="form-page">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>儿童信息管理</h2>
+        <div>
+          <h2><TeamOutlined />儿童信息管理</h2>
+          <p className="page-subtitle">维护在册儿童基本信息，绑定家长账号</p>
+        </div>
         <Space>
           <Input
             placeholder="搜索姓名/学校"
@@ -222,7 +227,6 @@ function ChildrenManage() {
         loading={loading}
         pagination={{ pageSize: 10 }}
         locale={{ emptyText: '暂无儿童信息' }}
-        scroll={{ x: 'max-content' }}
       />
 
       <Modal

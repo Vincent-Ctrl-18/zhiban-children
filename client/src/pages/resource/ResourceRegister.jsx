@@ -61,10 +61,10 @@ function ResourceRegister() {
     <div className="form-page">
       <div className="page-header">
         <h2>
-          <GiftOutlined style={{ marginRight: 8 }} />
+          <GiftOutlined />
           资源登记
         </h2>
-        <p style={{ color: '#666', marginTop: 8 }}>
+        <p className="page-subtitle">
           感谢您愿意为留守儿童提供帮助！请填写以下信息，我们会尽快与您联系。
         </p>
       </div>

@@ -99,7 +99,10 @@ function ResourceDashboard() {
 
   return (
     <div>
-      <h2 style={{ marginBottom: 24 }}>资源中心</h2>
+      <div className="page-title-bar">
+        <h2><GiftOutlined />资源中心</h2>
+        <p className="page-subtitle">汇聚各方爱心资源，助力留守儿童健康成长</p>
+      </div>
 
       {/* 筛选区域 */}
       <Card style={{ marginBottom: 24 }}>
