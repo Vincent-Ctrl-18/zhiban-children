@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Row, Col, Typography, Button, Tag, Space, List, message } from 'antd';
+import { Card, Row, Col, Typography, Button, Tag, Space, List } from 'antd';
 import {
   BookOutlined,
   FileTextOutlined,
@@ -11,12 +11,12 @@ import {
   TrophyOutlined,
   ThunderboltOutlined,
   BulbOutlined,
+  PlayCircleOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
 const { Title, Text, Paragraph } = Typography;
 
-// 每日一句励志话
 const dailyQuotes = [
   '每一个努力的日子，都是在为未来积攒力量',
   '知识就像星星，学得越多，夜空越璀璨',
@@ -35,12 +35,8 @@ function StudentDashboard() {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    // 随机每日一句
+    if (storedUser) setUser(JSON.parse(storedUser));
     setDailyQuote(dailyQuotes[Math.floor(Math.random() * dailyQuotes.length)]);
-    // 时段问候
     const hour = new Date().getHours();
     if (hour < 12) setGreeting('早上好');
     else if (hour < 18) setGreeting('下午好');
@@ -51,16 +47,16 @@ function StudentDashboard() {
     {
       key: '/student/homework',
       icon: <BookOutlined style={{ fontSize: 32 }} />,
-      title: '智能作业辅导',
-      desc: '拍照上传题目，AI帮你分析解题思路',
+      title: '作业帮手',
+      desc: '拍照上传题目，帮你分析解题思路',
       color: '#FF9F43',
       bg: 'linear-gradient(135deg, #FFE5B4 0%, #FFF5E6 100%)',
-      tag: 'AI 助手',
+      tag: '学习辅导',
     },
     {
       key: '/student/report',
       icon: <FileTextOutlined style={{ fontSize: 32 }} />,
-      title: '个性化学习报告',
+      title: '学习报告',
       desc: '了解你的学习特点，获取专属建议',
       color: '#1dd1a1',
       bg: 'linear-gradient(135deg, #b8f0d8 0%, #e3f9f3 100%)',
@@ -69,11 +65,20 @@ function StudentDashboard() {
     {
       key: '/student/chat',
       icon: <HeartOutlined style={{ fontSize: 32 }} />,
-      title: '谈心伙伴',
-      desc: '有什么烦恼都可以和我说说',
+      title: '倾诉小屋',
+      desc: '有什么烦恼都可以和我聊聊',
       color: '#ff6b6b',
       bg: 'linear-gradient(135deg, #ffc9c9 0%, #ffe8e8 100%)',
       tag: '温暖陪伴',
+    },
+    {
+      key: '/student/courses',
+      icon: <PlayCircleOutlined style={{ fontSize: 32 }} />,
+      title: '课程资源',
+      desc: '在线观看视频课程，阅读学习资料',
+      color: '#4F7942',
+      bg: 'linear-gradient(135deg, #c8e6c9 0%, #f1f8f1 100%)',
+      tag: '在线学习',
     },
   ];
 
@@ -86,13 +91,11 @@ function StudentDashboard() {
 
   return (
     <div className="student-dashboard">
-      {/* 页面标题 */}
       <div className="page-title-bar">
         <h2><SmileOutlined /> 学习空间</h2>
         <p className="page-subtitle">欢迎回来，{user?.realName || '同学'}。今天也是充满收获的一天。</p>
       </div>
 
-      {/* 欢迎区域 */}
       <Card className="student-welcome-card" bordered={false}>
         <Row gutter={[24, 16]} align="middle">
           <Col xs={24} md={16}>
@@ -115,10 +118,9 @@ function StudentDashboard() {
         </Row>
       </Card>
 
-      {/* 功能卡片 */}
       <Row gutter={[20, 20]} style={{ marginTop: 20 }}>
         {functionCards.map((card) => (
-          <Col xs={24} md={8} key={card.key}>
+          <Col xs={24} sm={12} md={6} key={card.key}>
             <Card
               hoverable
               className="student-func-card"
@@ -127,9 +129,9 @@ function StudentDashboard() {
             >
               <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ 
-                    width: 60, height: 60, borderRadius: 16, 
-                    background: 'rgba(255,255,255,0.8)', 
+                  <div style={{
+                    width: 60, height: 60, borderRadius: 16,
+                    background: 'rgba(255,255,255,0.8)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: card.color,
                   }}>
@@ -150,7 +152,6 @@ function StudentDashboard() {
         ))}
       </Row>
 
-      {/* 学习小贴士 */}
       <Card
         title={<span><StarFilled style={{ color: 'var(--primary-color)', marginRight: 8 }} />学习小贴士</span>}
         bordered={false}

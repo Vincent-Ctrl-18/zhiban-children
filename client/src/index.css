@@ -880,34 +880,62 @@ body {
 /* ---------- Section Headers ---------- */
 .section-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 56px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .section-tag {
-  display: inline-block;
-  padding: 8px 28px;
-  background: var(--primary-light);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 20px;
+  background: linear-gradient(135deg, var(--primary-light) 0%, rgba(79,121,66,0.08) 100%);
   color: var(--primary-color);
   border-radius: 980px;
-  font-size: 20px;
+  font-size: 13px;
   font-weight: 600;
-  margin-bottom: 16px;
-  letter-spacing: 4px;
+  margin-bottom: 20px;
+  letter-spacing: 3px;
   font-family: "Noto Serif SC", "Source Han Serif SC", "SimSun", "STSong", "Songti SC", serif;
+  border: 1px solid rgba(79,121,66,0.15);
+  box-shadow: 0 2px 12px rgba(79,121,66,0.08);
+}
+.section-tag::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  opacity: 0.7;
 }
 .section-title {
-  font-size: 40px;
-  font-weight: 700;
+  font-size: 38px;
+  font-weight: 800;
   color: var(--text-main);
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   letter-spacing: -0.5px;
   line-height: 1.2;
+  position: relative;
+  display: inline-block;
+}
+.section-title::after {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-color), #7ab870);
+  border-radius: 4px;
+  margin: 12px auto 0;
 }
 .section-desc {
-  font-size: 17px;
+  font-size: 16px;
   color: var(--text-light);
-  max-width: 520px;
+  max-width: 480px;
   margin: 0 auto;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 /* ---------- Features Section ---------- */
@@ -915,7 +943,10 @@ body {
   max-width: 1200px;
   width: 90%;
   margin: 0 auto;
-  padding: 48px 0 64px;
+  padding: 72px 0 80px;
+}
+.features-section-wrapper {
+  background: linear-gradient(180deg, #f7faf6 0%, #fff 100%);
 }
 .features-grid {
   display: grid;
@@ -923,25 +954,37 @@ body {
   gap: 20px;
 }
 .feature-card {
-  background: var(--bg-color);
-  border-radius: 20px;
-  padding: 40px 24px;
+  background: #fff;
+  border-radius: 24px;
+  padding: 44px 28px 36px;
   text-align: center;
   transition: all 0.5s var(--ease-out-expo);
-  border: 1px solid transparent;
+  border: 1.5px solid #f0f0f5;
   cursor: default;
+  position: relative;
+  overflow: hidden;
+}
+.feature-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(79,121,66,0.04) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
 }
 .feature-card:hover {
   transform: translateY(-10px);
-  box-shadow: 0 20px 50px rgba(0,0,0,0.06);
-  background: #fff;
-  border-color: #e8e8ed;
+  box-shadow: 0 20px 50px rgba(79,121,66,0.10);
+  border-color: rgba(79,121,66,0.18);
+}
+.feature-card:hover::before {
+  opacity: 1;
 }
 .feature-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  background: var(--primary-light);
+  width: 68px;
+  height: 68px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--primary-light), rgba(79,121,66,0.06));
   color: var(--primary-color);
   display: flex;
   align-items: center;
@@ -949,15 +992,17 @@ body {
   font-size: 28px;
   margin: 0 auto 24px;
   transition: all 0.5s var(--ease-out-expo);
+  box-shadow: 0 4px 16px rgba(79,121,66,0.12);
 }
 .feature-card:hover .feature-icon {
-  background: var(--primary-color);
+  background: linear-gradient(135deg, var(--primary-color), #7ab870);
   color: #fff;
-  transform: scale(1.1) rotate(-3deg);
-  border-radius: 20px;
+  transform: scale(1.08) rotate(-4deg);
+  border-radius: 22px;
+  box-shadow: 0 8px 24px rgba(79,121,66,0.28);
 }
 .feature-card h3 {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--text-main);
   margin-bottom: 10px;
@@ -965,7 +1010,7 @@ body {
 .feature-card p {
   font-size: 14px;
   color: var(--text-light);
-  line-height: 1.7;
+  line-height: 1.75;
 }
 
 /* ---------- Role Selection Section ---------- */
@@ -973,7 +1018,8 @@ body {
   max-width: 1200px;
   width: 90%;
   margin: 0 auto;
-  padding: 48px 0 64px;
+  padding: 72px 0 80px;
+  background: linear-gradient(180deg, transparent 0%, rgba(79,121,66,0.02) 100%);
 }
 .role-cards {
   display: flex;
@@ -991,13 +1037,13 @@ body {
 }
 .role-card {
   background: #fff;
-  border-radius: var(--radius-lg);
-  padding: 40px 24px;
+  border-radius: 24px;
+  padding: 44px 28px 32px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.5s var(--ease-out-expo);
-  border: 1px solid #f0f0f5;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  transition: all 0.45s var(--ease-out-expo);
+  border: 1.5px solid #f0f0f5;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
   position: relative;
   overflow: hidden;
   height: 100%;
@@ -1005,24 +1051,38 @@ body {
   flex-direction: column;
   align-items: center;
 }
+.role-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--role-color, #4F7942), transparent);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
 .role-card:hover {
-  transform: translateY(-12px);
-  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.08);
+  transform: translateY(-14px);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.10);
   border-color: transparent;
 }
+.role-card:hover::after {
+  opacity: 1;
+}
 .role-card .icon {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  border-radius: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
+  font-size: 34px;
   margin-bottom: 20px;
-  transition: all 0.5s var(--ease-out-expo);
+  transition: all 0.45s var(--ease-out-expo);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
 }
 .role-card:hover .icon {
-  transform: scale(1.15) rotate(-5deg);
+  transform: scale(1.12) rotate(-6deg);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.12);
 }
 .role-card h3 {
   font-size: 20px;
@@ -1033,16 +1093,16 @@ body {
 .role-card p {
   font-size: 14px;
   color: var(--text-light);
-  line-height: 1.6;
+  line-height: 1.7;
 }
 .decorative-bar {
   position: absolute;
   top: 0; left: 0;
   width: 100%; height: 4px;
-  background: var(--primary-color);
+  border-radius: 4px 4px 0 0;
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform 0.5s var(--ease-out-expo);
+  transition: transform 0.45s var(--ease-out-expo);
 }
 .role-card:hover .decorative-bar {
   transform: scaleX(1);
@@ -1301,6 +1361,17 @@ body {
 
 /* Ensure images don't overflow */
 img { max-width: 100%; height: auto; }
+
+/* ================================================================
+   LOGIN / REGISTER - Responsive
+   ================================================================ */
+@media (max-width: 768px) {
+  .login-brand-panel { display: none !important; }
+  .login-form-panel {
+    width: 100% !important;
+    padding: 40px 24px !important;
+  }
+}
 
 /* ============================================
    学生端样式

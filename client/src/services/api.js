@@ -46,6 +46,8 @@ api.interceptors.response.use(
 export const authApi = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
+  loginEmail: (data) => api.post('/auth/login-email', data),
+  verifyEmail: (token) => api.get(`/auth/verify-email?token=${token}`),
   getMe: () => api.get('/auth/me'),
   getInviteCode: () => api.get('/auth/institution/invite-code'),
   getMembers: () => api.get('/auth/institution/members'),
@@ -167,12 +169,22 @@ export const adminApi = {
 
 // AI 智能服务API
 export const aiApi = {
-  // 智能作业辅导
+  // 作业帮手
   homeworkHelp: (data) => api.post('/ai/homework', data, { timeout: 60000 }),
-  // 个性化学习报告
+  // 学习报告
   learningReport: (data) => api.post('/ai/learning-report', data, { timeout: 60000 }),
-  // 谈心伙伴
+  // 倾诉小屋
   chat: (data) => api.post('/ai/chat', data, { timeout: 30000 }),
+};
+
+// 课程资源API
+export const coursesApi = {
+  getList: (params) => api.get('/courses', { params }),
+  upload: (formData) => api.post('/courses/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000,
+  }),
+  delete: (id) => api.delete(`/courses/${id}`),
 };
 
 export default api;

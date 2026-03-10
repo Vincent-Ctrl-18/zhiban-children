@@ -18,6 +18,7 @@ const parentsRoutes = require('./routes/parents');
 const uploadRoutes = require('./routes/upload');
 const aiRoutes = require('./routes/ai');
 const adminRoutes = require('./routes/admin');
+const coursesRoutes = require('./routes/courses');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -29,6 +30,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // 静态文件服务（用于上传的文件）
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads/courses', express.static(path.join(__dirname, 'uploads/courses')));
 
 // API路由
 app.use('/api/auth', authRoutes);
@@ -43,6 +45,7 @@ app.use('/api/parents', parentsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/courses', coursesRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {

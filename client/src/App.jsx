@@ -18,6 +18,8 @@ import {
   FileTextOutlined,
   HeartOutlined,
   ReadOutlined,
+  PlayCircleOutlined,
+  UploadOutlined,
 } from '@ant-design/icons';
 
 // 页面组件
@@ -40,6 +42,9 @@ import LearningReport from './pages/student/LearningReport';
 import ChatCompanion from './pages/student/ChatCompanion';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminPanel from './pages/admin/AdminPanel';
+import VerifyEmail from './pages/VerifyEmail';
+import CourseResources from './pages/student/CourseResources';
+import CourseUpload from './pages/institution/CourseUpload';
 
 const { Header, Sider, Content } = Layout;
 
@@ -52,6 +57,7 @@ const menuConfig = {
     { key: '/institution/safety', icon: <SafetyOutlined />, label: '安全检查' },
     { key: '/institution/activities', icon: <CalendarOutlined />, label: '活动记录' },
     { key: '/institution/notifications', icon: <BellOutlined />, label: '通知管理' },
+    { key: '/institution/courses', icon: <UploadOutlined />, label: '课程资源' },
   ],
   parent: [
     { key: '/parent', icon: <HomeOutlined />, label: '首页' },
@@ -65,9 +71,10 @@ const menuConfig = {
   ],
   student: [
     { key: '/student', icon: <HomeOutlined />, label: '学习中心' },
-    { key: '/student/homework', icon: <BookOutlined />, label: '作业辅导' },
+    { key: '/student/homework', icon: <BookOutlined />, label: '作业帮手' },
     { key: '/student/report', icon: <FileTextOutlined />, label: '学习报告' },
-    { key: '/student/chat', icon: <HeartOutlined />, label: '谈心伙伴' },
+    { key: '/student/chat', icon: <HeartOutlined />, label: '倾诉小屋' },
+    { key: '/student/courses', icon: <PlayCircleOutlined />, label: '课程资源' },
   ],
 };
 
@@ -157,6 +164,7 @@ function App() {
         <Route path="/" element={<RoleSelection />} />
         <Route path="/login/:role" element={<Login onLogin={handleLogin} />} />
         <Route path="/register/:role" element={<Register onLogin={handleLogin} />} />
+        <Route path="/verify-email" element={<VerifyEmail onLogin={handleLogin} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -183,10 +191,11 @@ function App() {
         <div className="logo-container">
           {!collapsed && 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#FF9F43' }}></div>
-              <span style={{ color: '#2d3436', fontSize: 18 }}>智伴乡童</span>
+              <img src="/logo.png" alt="智伴乡童" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+              <span style={{ color: '#2d3436', fontSize: 16, fontWeight: 700 }}>智伴乡童</span>
             </div>
           }
+          {collapsed && <img src="/logo.png" alt="智伴乡童" style={{ width: 28, height: 28, objectFit: 'contain' }} />}
         </div>
         <Menu
           theme="light"
@@ -263,6 +272,10 @@ function App() {
             <Route path="/student/homework" element={<HomeworkHelp />} />
             <Route path="/student/report" element={<LearningReport />} />
             <Route path="/student/chat" element={<ChatCompanion />} />
+            <Route path="/student/courses" element={<CourseResources />} />
+
+            {/* 机构课程路由 */}
+            <Route path="/institution/courses" element={<CourseUpload />} />
             
             {/* 默认重定向 */}
             <Route path="*" element={<Navigate to={`/${user.role}`} replace />} />

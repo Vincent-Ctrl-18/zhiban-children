@@ -55,17 +55,17 @@ const roles = [
     key: 'student',
     icon: <ReadOutlined />,
     title: '学生',
-    description: 'AI智能作业辅导、个性化学习报告、温暖谈心陪伴',
+    description: '作业帮手辅导答疑、个性化学习报告、温暖倾诉小屋陪伴',
     color: '#ff6348',
     bg: '#ffede9',
   },
 ];
 
 const heroSlides = [
+  '/hero-bg.jpg',
   '/show-image1.jpg',
   '/show-image2.jpg',
   '/show-image3.jpg',
-  '/show-image4.jpg',
 ];
 
 const stats = [
@@ -232,12 +232,7 @@ function RoleSelection() {
       {/* ========== Navbar (glass on scroll) ========== */}
       <nav className={`site-navbar${navScrolled ? ' navbar-scrolled' : ''}`}>
         <div className="nav-logo">
-          <svg className="nav-icon" viewBox="0 0 100 100">
-            <path d="M50 20 C30 20 15 35 15 55 C15 75 35 90 50 90 C65 90 85 75 85 55 C85 35 70 20 50 20 Z" fill="#FF9F43" />
-            <circle cx="35" cy="45" r="5" fill="white" />
-            <circle cx="65" cy="45" r="5" fill="white" />
-            <path d="M35 70 Q50 80 65 70" stroke="white" strokeWidth="4" strokeLinecap="round" fill="none" />
-          </svg>
+          <img src="/logo.png" alt="智伴乡童" className="nav-icon" style={{ width: 36, height: 36, objectFit: 'contain' }} />
           智伴乡童
         </div>
         <div className="nav-links">
@@ -316,6 +311,7 @@ function RoleSelection() {
       </RevealSection>
 
       {/* ========== Features Section ========== */}
+      <div className="features-section-wrapper">
       <section className="features-section">
         <RevealSection>
           <div className="section-header">
@@ -336,8 +332,7 @@ function RoleSelection() {
           ))}
         </div>
       </section>
-
-      {/* ========== Role Selection Section ========== */}
+      </div>
       <section className="role-section" id="role-section">
         <RevealSection>
           <div className="section-header">
@@ -388,12 +383,7 @@ function RoleSelection() {
         <div className="footer-content">
           <div className="footer-brand">
             <div className="footer-logo">
-              <svg viewBox="0 0 100 100" width="36" height="36">
-                <path d="M50 20 C30 20 15 35 15 55 C15 75 35 90 50 90 C65 90 85 75 85 55 C85 35 70 20 50 20 Z" fill="#FF9F43" />
-                <circle cx="35" cy="45" r="5" fill="white" />
-                <circle cx="65" cy="45" r="5" fill="white" />
-                <path d="M35 70 Q50 80 65 70" stroke="white" strokeWidth="4" strokeLinecap="round" fill="none" />
-              </svg>
+              <img src="/logo.png" alt="智伴乡童" style={{ width: 36, height: 36, objectFit: 'contain' }} />
               <span>智伴乡童</span>
             </div>
             <p className="footer-slogan">智伴乡童，暖护童心<br/>让每一个孩子都被温柔以待</p>
