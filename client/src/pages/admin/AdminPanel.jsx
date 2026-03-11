@@ -61,6 +61,7 @@ function AdminPanel({ onLogout }) {
 
   const menuItems = [
     { key: 'dashboard', icon: <DashboardOutlined />, label: '数据总览' },
+    { key: 'users', icon: <TeamOutlined />, label: '用户管理' },
     { key: 'audit', icon: <AuditOutlined />, label: '资源审核' },
     { key: 'apikey', icon: <KeyOutlined />, label: 'API 密钥' },
     { key: 'prompts', icon: <MessageOutlined />, label: 'AI Prompt' },
@@ -100,6 +101,7 @@ function AdminPanel({ onLogout }) {
         <Header style={{ background: '#fff', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
           <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
             {activeTab === 'dashboard' && <><BarChartOutlined style={{ color: '#6c5ce7' }} /> 数据总览</>}
+            {activeTab === 'users' && <><TeamOutlined style={{ color: '#6c5ce7' }} /> 用户管理</>}
             {activeTab === 'audit' && <><AuditOutlined style={{ color: '#6c5ce7' }} /> 资源审核</>}
             {activeTab === 'apikey' && <><KeyOutlined style={{ color: '#6c5ce7' }} /> API 密钥管理</>}
             {activeTab === 'prompts' && <><MessageOutlined style={{ color: '#6c5ce7' }} /> AI Prompt 管理</>}
@@ -111,6 +113,7 @@ function AdminPanel({ onLogout }) {
         </Header>
         <Content style={{ padding: 24, background: '#f5f6fa' }}>
           {activeTab === 'dashboard' && <DashboardTab />}
+          {activeTab === 'users' && <UsersTab />}
           {activeTab === 'audit' && <AuditTab />}
           {activeTab === 'apikey' && <ApiKeyTab />}
           {activeTab === 'prompts' && <PromptTab />}
@@ -245,6 +248,155 @@ function DashboardTab() {
           ))}
         </Row>
       </Card>
+    </div>
+  );
+}
+
+// ========== 用户管理 Tab ==========
+const roleMap = {
+  parent: { label: '家长', color: '#FF9F43' },
+  institution: { label: '托管机构', color: '#1dd1a1' },
+  resource: { label: '资源方', color: '#48dbfb' },
+  government: { label: '政府/捐赠方', color: '#a55eea' },
+  student: { label: '学生', color: '#ff6348' },
+};
+
+function UsersTab() {
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState({ total: 0, list: [] });
+  const [params, setParams] = useState({ page: 1, pageSize: 15, role: '', keyword: '' });
+  const [detailVisible, setDetailVisible] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const query = { page: params.page, pageSize: params.pageSize };
+      if (params.role) query.role = params.role;
+      if (params.keyword) query.keyword = params.keyword;
+      const res = await adminApi.getUsers(query);
+      setData(res);
+    } catch (error) {
+      message.error('获取用户列表失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchUsers(); }, [params.page, params.pageSize, params.role]);
+
+  const handleSearch = () => {
+    setParams(prev => ({ ...prev, page: 1 }));
+    fetchUsers();
+  };
+
+  const columns = [
+    { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
+    { title: '用户名', dataIndex: 'username', key: 'username', width: 130, ellipsis: true },
+    {
+      title: '角色', dataIndex: 'role', key: 'role', width: 110,
+      render: (role) => {
+        const r = roleMap[role];
+        return r ? <Tag color={r.color}>{r.label}</Tag> : <Tag>{role}</Tag>;
+      },
+      filters: Object.entries(roleMap).map(([k, v]) => ({ text: v.label, value: k })),
+      filterMultiple: false,
+    },
+    { title: '真实姓名', dataIndex: 'real_name', key: 'real_name', width: 100, render: (v) => v || '-' },
+    { title: '手机号', dataIndex: 'phone', key: 'phone', width: 130, render: (v) => v || '-' },
+    { title: '邮箱', dataIndex: 'email', key: 'email', width: 180, ellipsis: true, render: (v) => v || '-' },
+    {
+      title: '邮箱验证', dataIndex: 'email_verified', key: 'email_verified', width: 90, align: 'center',
+      render: (v, record) => !record.email ? <Text type="secondary">-</Text> : v ? <Tag color="green">已验证</Tag> : <Tag color="orange">未验证</Tag>,
+    },
+    { title: '机构/组织', dataIndex: 'organization', key: 'organization', width: 150, ellipsis: true, render: (v) => v || '-' },
+    {
+      title: '所属机构', dataIndex: 'institution_name', key: 'institution_name', width: 140, ellipsis: true,
+      render: (v) => v || '-',
+    },
+    {
+      title: '注册时间', dataIndex: 'created_at', key: 'created_at', width: 170, sorter: true,
+      render: (date) => date ? new Date(date).toLocaleString('zh-CN') : '-',
+    },
+    {
+      title: '操作', key: 'action', width: 80, fixed: 'right',
+      render: (_, record) => (
+        <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => { setCurrentUser(record); setDetailVisible(true); }}>详情</Button>
+      ),
+    },
+  ];
+
+  return (
+    <div>
+      {/* 筛选栏 */}
+      <Card style={{ marginBottom: 16, borderRadius: 10 }} bordered={false}>
+        <Space wrap>
+          <Select
+            value={params.role || undefined}
+            onChange={v => setParams(prev => ({ ...prev, role: v || '', page: 1 }))}
+            style={{ width: 140 }} allowClear placeholder="全部角色"
+          >
+            {Object.entries(roleMap).map(([k, v]) => <Option key={k} value={k}>{v.label}</Option>)}
+          </Select>
+          <Input
+            placeholder="搜索用户名/姓名/手机/邮箱/组织"
+            prefix={<SearchOutlined />}
+            value={params.keyword}
+            onChange={e => setParams(prev => ({ ...prev, keyword: e.target.value }))}
+            onPressEnter={handleSearch}
+            style={{ width: 280 }}
+            allowClear
+          />
+          <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}
+            style={{ background: '#6c5ce7', borderColor: '#6c5ce7' }}>搜索</Button>
+          <Button icon={<ReloadOutlined />} onClick={() => { setParams({ page: 1, pageSize: 15, role: '', keyword: '' }); }}>重置</Button>
+        </Space>
+      </Card>
+
+      {/* 表格 */}
+      <Card bordered={false} style={{ borderRadius: 10 }}>
+        <Table
+          columns={columns}
+          dataSource={data.list}
+          rowKey="id"
+          loading={loading}
+          pagination={{
+            current: params.page,
+            pageSize: params.pageSize,
+            total: data.total,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (t) => `共 ${t} 位用户`,
+            onChange: (page, pageSize) => setParams(prev => ({ ...prev, page, pageSize })),
+          }}
+          scroll={{ x: 1400 }}
+          locale={{ emptyText: <Empty description="暂无用户数据" /> }}
+        />
+      </Card>
+
+      {/* 用户详情弹窗 */}
+      <Modal title="用户详情" open={detailVisible} onCancel={() => setDetailVisible(false)}
+        footer={<Button onClick={() => setDetailVisible(false)}>关闭</Button>} width={600}>
+        {currentUser && (
+          <Descriptions column={2} bordered size="small" style={{ marginTop: 16 }}>
+            <Descriptions.Item label="ID">{currentUser.id}</Descriptions.Item>
+            <Descriptions.Item label="用户名">{currentUser.username}</Descriptions.Item>
+            <Descriptions.Item label="角色">
+              <Tag color={roleMap[currentUser.role]?.color}>{roleMap[currentUser.role]?.label || currentUser.role}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="真实姓名">{currentUser.real_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="手机号">{currentUser.phone || '-'}</Descriptions.Item>
+            <Descriptions.Item label="邮箱">{currentUser.email || '-'}</Descriptions.Item>
+            <Descriptions.Item label="邮箱验证">
+              {!currentUser.email ? '-' : currentUser.email_verified ? <Tag color="green">已验证</Tag> : <Tag color="orange">未验证</Tag>}
+            </Descriptions.Item>
+            <Descriptions.Item label="机构/组织">{currentUser.organization || '-'}</Descriptions.Item>
+            <Descriptions.Item label="所属机构" span={2}>{currentUser.institution_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="注册时间" span={2}>{currentUser.created_at ? new Date(currentUser.created_at).toLocaleString('zh-CN') : '-'}</Descriptions.Item>
+            <Descriptions.Item label="更新时间" span={2}>{currentUser.updated_at ? new Date(currentUser.updated_at).toLocaleString('zh-CN') : '-'}</Descriptions.Item>
+          </Descriptions>
+        )}
+      </Modal>
     </div>
   );
 }

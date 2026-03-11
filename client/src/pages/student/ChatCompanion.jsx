@@ -34,7 +34,7 @@ function ChatCompanion() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     setChatHistory([{
       role: 'assistant',
-      content: `你好呀${user.realName ? '，' + user.realName : ''}！我是你的谈心伙伴小暖，很高兴见到你！\n\n有什么开心的事想分享，或者有什么烦恼想倾诉，都可以跟我说说哦。我会一直在这里陂着你。`,
+      content: `你好呀${user.realName ? '，' + user.realName : ''}！我是你的谈心伙伴小暖，很高兴见到你！\n\n有什么开心的事想分享，或者有什么烦恼想倾诉，都可以跟我说说哦。我会一直在这里陪着你。`,
       time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
     }]);
   }, []);
@@ -80,7 +80,7 @@ function ChatCompanion() {
       message.error('发送失败，请稍后重试');
       const errorMsg = {
         role: 'assistant',
-        content: '网络出了点小问题，不过没关系，我一直在这里陂着你，等网络好了再聊吧～',
+        content: '网络出了点小问题，不过没关系，我一直在这里陪着你，等网络好了再聊吧～',
         time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
       };
       setChatHistory((prev) => [...prev, errorMsg]);
@@ -109,7 +109,7 @@ function ChatCompanion() {
     <div className="chat-companion-page">
       <div className="page-title-bar">
         <h2><HeartFilled style={{ color: '#ff6b6b' }} /> 谈心伙伴</h2>
-        <p className="page-subtitle">有什么烦恼都可以和小暖说说，我会一直陂着你</p>
+        <p className="page-subtitle">有什么烦恼都可以和小暖说说，我会一直陪着你</p>
       </div>
 
       <Card
@@ -206,7 +206,7 @@ function ChatCompanion() {
       <Card bordered={false} style={{ marginTop: 16, borderRadius: 16, background: '#fffbf0' }}>
         <Text type="secondary" style={{ fontSize: 13 }}>
           <BulbOutlined style={{ color: 'var(--primary-color)', marginRight: 4 }} />
-          <strong>温馨提示：</strong>小暖是一个 AI 陂伴伙伴，可以帮你分享快乐、倾诉烦恼。
+          <strong>温馨提示：</strong>小暖是一个 AI 陪伴伙伴，可以帮你分享快乐、倾诉烦恼。
           如果你遇到严重的困扰，请及时告诉身边的老师或大人哦。
           全国24小时心理援助热线：<strong style={{ color: '#ff6b6b' }}>12355</strong>
         </Text>

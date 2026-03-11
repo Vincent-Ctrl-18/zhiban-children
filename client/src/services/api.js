@@ -30,7 +30,10 @@ api.interceptors.response.use(
   (error) => {
     if (error.response) {
       const { status, data } = error.response;
-      if (status === 401) {
+      const url = error.config?.url || '';
+      // 仅对非登录接口的 401 做跳转（登录接口 401 属于凭据错误，应由业务层处理）
+      const isLoginRequest = url.includes('/auth/login') || url.includes('/admin/login');
+      if (status === 401 && !isLoginRequest) {
         // token过期，清除登录状态
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -128,6 +131,10 @@ export const adminApi = {
   getStatistics: () => {
     const token = localStorage.getItem('adminToken');
     return api.get('/admin/statistics', { headers: { Authorization: `Bearer ${token}` } });
+  },
+  getUsers: (params) => {
+    const token = localStorage.getItem('adminToken');
+    return api.get('/admin/users', { params, headers: { Authorization: `Bearer ${token}` } });
   },
   getResources: (params) => {
     const token = localStorage.getItem('adminToken');

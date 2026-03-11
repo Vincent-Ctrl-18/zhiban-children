@@ -255,6 +255,48 @@ router.post('/api-key/test', authenticateAdmin, async (req, res) => {
   }
 });
 
+// ===== 用户管理 =====
+router.get('/users', authenticateAdmin, async (req, res) => {
+  try {
+    const { role, keyword, page = 1, pageSize = 20 } = req.query;
+    const offset = (Math.max(1, Number(page)) - 1) * Number(pageSize);
+    const limit = Math.min(100, Math.max(1, Number(pageSize)));
+
+    let where = 'WHERE 1=1';
+    const params = [];
+    if (role) {
+      where += ' AND u.role = ?';
+      params.push(role);
+    }
+    if (keyword) {
+      where += ' AND (u.username LIKE ? OR u.real_name LIKE ? OR u.phone LIKE ? OR u.email LIKE ? OR u.organization LIKE ?)';
+      const kw = `%${keyword}%`;
+      params.push(kw, kw, kw, kw, kw);
+    }
+
+    const countSql = `SELECT COUNT(*) as total FROM users u ${where}`;
+    const [countResult] = await pool.query(countSql, params);
+    const total = countResult[0].total;
+
+    const dataSql = `
+      SELECT u.id, u.username, u.role, u.real_name, u.phone, u.email, u.organization,
+             u.email_verified, u.institution_id, u.created_at, u.updated_at,
+             i.name as institution_name
+      FROM users u
+      LEFT JOIN institutions i ON u.institution_id = i.id
+      ${where}
+      ORDER BY u.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+    const [rows] = await pool.query(dataSql, [...params, limit, offset]);
+
+    res.json({ total, page: Number(page), pageSize: limit, list: rows });
+  } catch (error) {
+    console.error('获取用户列表失败:', error);
+    res.status(500).json({ message: '获取用户列表失败' });
+  }
+});
+
 // ===== Prompt 管理 =====
 router.get('/prompts', authenticateAdmin, (req, res) => {
   try {
