@@ -47,32 +47,57 @@ info "PM2 $(pm2 -v)"
 # 3. 安装并配置 MySQL 8.0
 # ================================================================
 section "3/7  安装 MySQL"
+
+# 1. 安装服务
 if ! command -v mysql &>/dev/null; then
   apt-get install -y mysql-server
   systemctl enable mysql --now
 fi
 
-# 生成随机密码
+# 2. 准备凭据
 MYSQL_ROOT_PASS=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 16)
 DB_APP_USER="zbxt"
 DB_APP_PASS=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 16)
 
-# 配置数据库
-mysql -u root <<SQL
+# 3. 核心修复：尝试不同的方式进入 MySQL
+info "正在配置数据库权限..."
+
+# 定义 SQL 执行函数，尝试自动处理权限问题
+run_sql() {
+  # 尝试 1: 直接运行 (Ubuntu 默认 auth_socket 模式)
+  if echo "$1" | mysql -u root 2>/dev/null; then
+    return 0
+  # 尝试 2: 使用 sudo 运行
+  elif echo "$1" | sudo mysql -u root 2>/dev/null; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# 执行初始化 SQL
+SQL_CMDS="
 ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${MYSQL_ROOT_PASS}';
 CREATE DATABASE IF NOT EXISTS zhiban_children DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS '${DB_APP_USER}'@'localhost' IDENTIFIED BY '${DB_APP_PASS}';
 GRANT ALL PRIVILEGES ON zhiban_children.* TO '${DB_APP_USER}'@'localhost';
-FLUSH PRIVILEGES;
-SQL
+FLUSH PRIVILEGES;"
 
+if run_sql "$SQL_CMDS"; then
+  info "MySQL 配置成功！"
+else
+  error "无法连接到 MySQL。原因：root 账号可能已存在密码。
+  请手动执行：mysql -u root -p 并运行上述 SQL 指令，或者重置 MySQL 后再运行此脚本。"
+fi
+
+# 保存凭据
 cat > /root/.mysql_zbxt_creds <<EOF
 MySQL root 密码: ${MYSQL_ROOT_PASS}
 应用账号: ${DB_APP_USER}
 应用密码: ${DB_APP_PASS}
 EOF
 chmod 600 /root/.mysql_zbxt_creds
-info "MySQL 配置完成，凭据已存至 /root/.mysql_zbxt_creds"
+warn "MySQL 凭据已更新至 /root/.mysql_zbxt_creds"
 
 # ================================================================
 # 4. 路径验证 (替代原有的 Clone 步骤)
