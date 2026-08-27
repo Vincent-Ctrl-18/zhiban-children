@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_BASE_URL = '/api';
+import { API_BASE_URL, withBasePath } from '../utils/paths';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -37,7 +36,7 @@ api.interceptors.response.use(
         // token过期，清除登录状态
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.href = '/';
+        window.location.href = withBasePath('/');
       }
       return Promise.reject(new Error(data.message || '请求失败'));
     }

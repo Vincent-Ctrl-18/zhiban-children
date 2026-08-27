@@ -6,6 +6,7 @@ import {
 import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, PictureOutlined, CalendarOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { activitiesApi } from '../../services/api';
+import { withBasePath, withoutBasePath } from '../../utils/paths';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -67,7 +68,7 @@ function ActivityRecord() {
         uid: `-${index}`,
         name: `photo-${index}.jpg`,
         status: 'done',
-        url: url,
+        url: withBasePath(url),
       })));
     } else {
       form.resetFields();
@@ -84,7 +85,7 @@ function ActivityRecord() {
     // 当文件上传完成时，确保 url 被正确设置
     const updatedFileList = newFileList.map(f => {
       if (f.uid === file.uid && file.status === 'done' && file.response?.url) {
-        return { ...f, status: 'done', url: file.response.url };
+        return { ...f, status: 'done', url: withBasePath(file.response.url) };
       }
       // 保留已经有 url 的文件
       if (f.url) {
@@ -102,7 +103,7 @@ function ActivityRecord() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/upload/image', {
+      const response = await fetch(withBasePath('/api/upload/image'), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -134,7 +135,7 @@ function ActivityRecord() {
       // 收集已上传的图片URL
       const photos = fileList
         .filter(file => file.status === 'done' && file.url)
-        .map(file => file.url);
+        .map(file => withoutBasePath(file.url));
       
       const data = {
         ...values,

@@ -1,213 +1,112 @@
-#!/bin/bash
-# ================================================================
-#  智伴乡童 - VPS 内部部署脚本 (已在项目目录下运行)
-#  适用：Ubuntu 22.04 / Node.js + MySQL + Nginx + PM2
-# ================================================================
-set -e
+#!/usr/bin/env bash
+# Safely build and restart an already-provisioned /zbxt release.
+# First-time provisioning, Nginx changes, backups, and rollback are documented in
+# DEPLOYMENT_TENCENT_CLOUD.md and are intentionally not automated here.
 
-# 自动获取当前脚本所在的项目根目录
-APP_DIR=$(cd "$(dirname "$0")"; pwd)
-SERVER_IP="193.134.211.233"
+set -Eeuo pipefail
 
-# ── 颜色输出 ──────────────────────────────────────────────────
-GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
-info()    { echo -e "${GREEN}[✓] $1${NC}"; }
-warn()    { echo -e "${YELLOW}[!] $1${NC}"; }
-error()   { echo -e "${RED}[✗] $1${NC}"; exit 1; }
-section() { echo -e "\n${GREEN}════════════════════════════════${NC}"; echo -e "${GREEN}  $1${NC}"; echo -e "${GREEN}════════════════════════════════${NC}"; }
+APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROCESS_NAME="${PROCESS_NAME:-zhiban-server-v2}"
+EXPECTED_PORT="${EXPECTED_PORT:-3011}"
+ENV_FILE="$APP_DIR/server/.env"
 
-# 检查 root 权限
-if [ "$EUID" -ne 0 ]; then 
-  error "请使用 sudo 运行此脚本"
-fi
-
-# ================================================================
-# 1. 系统更新与基础依赖
-# ================================================================
-section "1/7  系统更新"
-apt-get update -y && apt-get install -y curl git nginx ufw openssl
-info "系统依赖安装完成"
-
-# ================================================================
-# 2. 安装 Node.js 20 LTS
-# ================================================================
-section "2/7  安装 Node.js 20"
-if ! command -v node &>/dev/null || [[ $(node -v | cut -d. -f1 | tr -d 'v') -lt 18 ]]; then
-  info "正在安装 Node.js 20..."
-  curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-  apt-get install -y nodejs
-fi
-info "Node $(node -v) / npm $(npm -v)"
-
-# 安装 PM2
-npm install -g pm2 2>/dev/null
-info "PM2 $(pm2 -v)"
-
-# ================================================================
-# 3. 安装并配置 MySQL 8.0
-# ================================================================
-section "3/7  安装 MySQL"
-
-# 1. 安装服务
-if ! command -v mysql &>/dev/null; then
-  apt-get install -y mysql-server
-  systemctl enable mysql --now
-fi
-
-# 2. 准备凭据
-MYSQL_ROOT_PASS=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 16)
-DB_APP_USER="zbxt"
-DB_APP_PASS=$(openssl rand -base64 16 | tr -dc 'A-Za-z0-9' | head -c 16)
-
-# 3. 核心修复：尝试不同的方式进入 MySQL
-info "正在配置数据库权限..."
-
-# 定义 SQL 执行函数，尝试自动处理权限问题
-run_sql() {
-  # 尝试 1: 直接运行 (Ubuntu 默认 auth_socket 模式)
-  if echo "$1" | mysql -u root 2>/dev/null; then
-    return 0
-  # 尝试 2: 使用 sudo 运行
-  elif echo "$1" | sudo mysql -u root 2>/dev/null; then
-    return 0
-  else
-    return 1
-  fi
+fail() {
+  echo "[error] $*" >&2
+  exit 1
 }
 
-# 执行初始化 SQL
-SQL_CMDS="
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${MYSQL_ROOT_PASS}';
-CREATE DATABASE IF NOT EXISTS zhiban_children DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS '${DB_APP_USER}'@'localhost' IDENTIFIED BY '${DB_APP_PASS}';
-GRANT ALL PRIVILEGES ON zhiban_children.* TO '${DB_APP_USER}'@'localhost';
-FLUSH PRIVILEGES;"
+info() {
+  echo "[ok] $*"
+}
 
-if run_sql "$SQL_CMDS"; then
-  info "MySQL 配置成功！"
-else
-  error "无法连接到 MySQL。原因：root 账号可能已存在密码。
-  请手动执行：mysql -u root -p 并运行上述 SQL 指令，或者重置 MySQL 后再运行此脚本。"
+read_env() {
+  local key="$1"
+  awk -F= -v key="$key" '
+    $0 !~ /^[[:space:]]*#/ && $1 == key {
+      print substr($0, index($0, "=") + 1)
+      exit
+    }
+  ' "$ENV_FILE"
+}
+
+if [ "$(id -un)" != "ubuntu" ]; then
+  fail "run as the ubuntu PM2 owner: sudo -iu ubuntu"
 fi
 
-# 保存凭据
-cat > /root/.mysql_zbxt_creds <<EOF
-MySQL root 密码: ${MYSQL_ROOT_PASS}
-应用账号: ${DB_APP_USER}
-应用密码: ${DB_APP_PASS}
-EOF
-chmod 600 /root/.mysql_zbxt_creds
-warn "MySQL 凭据已更新至 /root/.mysql_zbxt_creds"
-
-# ================================================================
-# 4. 路径验证 (替代原有的 Clone 步骤)
-# ================================================================
-section "4/7  验证项目路径"
-info "当前项目路径: $APP_DIR"
-if [ ! -d "$APP_DIR/server" ] || [ ! -d "$APP_DIR/client" ]; then
-  error "错误：未能在当前目录找到 server 或 client 文件夹，请确保在项目根目录下运行。"
-fi
-
-# ================================================================
-# 5. 初始化数据库表结构
-# ================================================================
-section "5/7  初始化数据库"
-# 确保在项目根目录执行
-cd $APP_DIR
-
-# 检查 SQL 文件是否存在并导入
-for sql_file in database/init.sql database/update_institution_multi_user.sql database/update_add_student.sql database/update_admin_features.sql; do
-  if [ -f "$sql_file" ]; then
-    mysql -u ${DB_APP_USER} -p${DB_APP_PASS} zhiban_children < "$sql_file"
-    info "已导入: $sql_file"
-  else
-    warn "跳过: 未找到 $sql_file"
-  fi
+for command_name in git node npm pm2 curl; do
+  command -v "$command_name" >/dev/null 2>&1 || fail "missing command: $command_name"
 done
 
-# ================================================================
-# 6. 后端配置 & 启动
-# ================================================================
-section "6/7  部署后端"
-cd $APP_DIR/server
-npm install --production
+test -d "$APP_DIR/.git" || fail "not a Git checkout: $APP_DIR"
+test -f "$ENV_FILE" || fail "missing production environment file: $ENV_FILE"
+test -f "$APP_DIR/client/package-lock.json" || fail "missing client lockfile"
+test -f "$APP_DIR/server/package-lock.json" || fail "missing server lockfile"
 
-JWT_SECRET=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 32)
+if ! git -C "$APP_DIR" diff --quiet || ! git -C "$APP_DIR" diff --cached --quiet; then
+  fail "working tree is not clean; review local changes before deployment"
+fi
 
-cat > .env <<EOF
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=${DB_APP_USER}
-DB_PASSWORD=${DB_APP_PASS}
-DB_NAME=zhiban_children
-JWT_SECRET=${JWT_SECRET}
-JWT_EXPIRES_IN=7d
-PORT=3001
-UPLOAD_DIR=./uploads
-ARK_API_KEY=your_doubao_api_key_here
-SMTP_HOST=smtp.163.com
-SMTP_PORT=465
-SMTP_USER=peiyi26287@163.com
-SMTP_PASS=PQkDAQKt4FSZNvsE
-SMTP_FROM=智伴乡童 <peiyi26287@163.com>
-FRONTEND_URL=http://${SERVER_IP}
-EOF
+host_value="$(read_env HOST)"
+port_value="$(read_env PORT)"
+base_path_value="$(read_env PUBLIC_BASE_PATH)"
+frontend_url_value="$(read_env FRONTEND_URL)"
+cors_origin_value="$(read_env CORS_ORIGIN)"
+upload_dir_value="$(read_env UPLOAD_DIR)"
+admin_username_value="$(read_env ADMIN_USERNAME)"
+admin_password_value="$(read_env ADMIN_PASSWORD)"
 
-mkdir -p uploads/courses uploads/activities
+[ "$host_value" = "127.0.0.1" ] || fail "HOST must be 127.0.0.1"
+[ "$port_value" = "$EXPECTED_PORT" ] || fail "PORT must be $EXPECTED_PORT"
+[ "$base_path_value" = "/zbxt" ] || fail "PUBLIC_BASE_PATH must be /zbxt"
+[ "$frontend_url_value" = "https://vincentt.xyz/zbxt" ] || fail "FRONTEND_URL is incorrect"
+[ "$cors_origin_value" = "https://vincentt.xyz" ] || fail "CORS_ORIGIN is incorrect"
+case "$upload_dir_value" in
+  /*) ;;
+  *) fail "UPLOAD_DIR must be an absolute persistent path" ;;
+esac
+[ -n "$admin_username_value" ] || fail "ADMIN_USERNAME is not configured"
+[ -n "$admin_password_value" ] || fail "ADMIN_PASSWORD is not configured"
+[ "$admin_password_value" != "replace_with_a_strong_password" ] || fail "replace the example admin password"
 
-pm2 delete zbxt-server 2>/dev/null || true
-pm2 start app.js --name zbxt-server --env production
-pm2 save
-info "后端已启动"
+mkdir -p "$upload_dir_value"
+test -w "$upload_dir_value" || fail "UPLOAD_DIR is not writable by ubuntu"
 
-# ================================================================
-# 7. 前端构建 & Nginx 配置
-# ================================================================
-section "7/7  构建前端 & 配置 Nginx"
-cd $APP_DIR/client
-npm install
+info "configuration validated"
+
+cd "$APP_DIR/server"
+npm ci --omit=dev --no-audit --no-fund
+node --check app.js
+node --check config/paths.js
+
+cd "$APP_DIR/client"
+npm ci --no-audit --no-fund
 npm run build
-info "前端构建完成"
+test -s dist/index.html || fail "frontend build did not produce dist/index.html"
 
-# 动态生成 Nginx 配置（注入当前 APP_DIR 路径）
-cat > /etc/nginx/sites-available/zbxt <<NGINX
-server {
-    listen 80;
-    server_name _;
+if pm2 describe "$PROCESS_NAME" >/dev/null 2>&1; then
+  pm2 restart "$PROCESS_NAME" --update-env
+else
+  pm2 start "$APP_DIR/server/app.js" \
+    --name "$PROCESS_NAME" \
+    --cwd "$APP_DIR/server"
+fi
 
-    root ${APP_DIR}/client/dist;
-    index index.html;
+health_ok=0
+for attempt in $(seq 1 20); do
+  if curl --fail --silent "http://127.0.0.1:$EXPECTED_PORT/api/health" \
+    > /tmp/zhiban-health.json; then
+    health_ok=1
+    break
+  fi
+  sleep 1
+done
 
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
+if [ "$health_ok" -ne 1 ]; then
+  pm2 logs "$PROCESS_NAME" --nostream --lines 80 || true
+  fail "backend health check failed"
+fi
 
-    location /api/ {
-        proxy_pass http://127.0.0.1:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-    }
-
-    location /uploads/ {
-        proxy_pass http://127.0.0.1:3001;
-        proxy_set_header Host \$host;
-        client_max_body_size 500m;
-    }
-
-    client_max_body_size 500m;
-}
-NGINX
-
-ln -sf /etc/nginx/sites-available/zbxt /etc/nginx/sites-enabled/zbxt
-rm -f /etc/nginx/sites-enabled/default
-nginx -t && systemctl restart nginx
-info "Nginx 配置完成"
-
-# 防火墙
-ufw allow 80/tcp
-ufw allow 443/tcp
-ufw --force enable 2>/dev/null || true
-
-section "部署成功！"
-info "访问地址：http://${SERVER_IP}"
+pm2 save
+info "backend health check passed: $(cat /tmp/zhiban-health.json)"
+info "frontend build ready at $APP_DIR/client/dist"
+info "complete the versioned static-file and Nginx steps in DEPLOYMENT_TENCENT_CLOUD.md"

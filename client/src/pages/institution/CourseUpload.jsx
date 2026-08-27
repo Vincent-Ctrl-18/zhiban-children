@@ -8,6 +8,7 @@ import {
   CloudUploadOutlined,
 } from '@ant-design/icons';
 import { coursesApi } from '../../services/api';
+import { withBasePath } from '../../utils/paths';
 
 const { Dragger } = Upload;
 
@@ -260,12 +261,12 @@ function CourseUpload() {
             controls
             autoPlay
             style={{ width: '100%', borderRadius: 8, maxHeight: 480 }}
-            src={previewFile.file_path}
+            src={withBasePath(previewFile.file_path)}
           />
         )}
         {previewFile?.file_type === 'pdf' && (
           <iframe
-            src={previewFile.file_path}
+            src={withBasePath(previewFile.file_path)}
             style={{ width: '100%', height: 560, border: 'none', borderRadius: 8 }}
             title={previewFile?.title}
           />

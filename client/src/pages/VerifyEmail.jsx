@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, Spin } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { authApi } from '../services/api';
+import { withBasePath } from '../utils/paths';
 
 function VerifyEmail({ onLogin }) {
   const [searchParams] = useSearchParams();
@@ -50,7 +51,7 @@ function VerifyEmail({ onLogin }) {
         maxWidth: 420,
         width: '90%',
       }}>
-        <img src="/logo.png" alt="智伴乡童" style={{ width: 64, height: 64, objectFit: 'contain', marginBottom: 24 }} />
+        <img src={withBasePath('/logo.png')} alt="智伴乡童" style={{ width: 64, height: 64, objectFit: 'contain', marginBottom: 24 }} />
 
         {status === 'loading' && (
           <>

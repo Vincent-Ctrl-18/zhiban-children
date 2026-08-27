@@ -15,9 +15,8 @@ const router = express.Router();
   try { await pool.query(`ALTER TABLE resources ADD COLUMN reviewed_by VARCHAR(50) DEFAULT NULL AFTER reviewed_at`); } catch(e) {}
 })();
 
-// 管理员硬编码凭据
-const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = "asdfghjkl;'";
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 // 管理员 token 验证中间件
 const authenticateAdmin = (req, res, next) => {
@@ -37,6 +36,9 @@ const authenticateAdmin = (req, res, next) => {
 
 // ===== 管理员登录 =====
 router.post('/login', (req, res) => {
+  if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
+    return res.status(503).json({ message: '管理员账号尚未配置' });
+  }
   const { username, password } = req.body;
   if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
     const token = jwt.sign(

@@ -12,6 +12,7 @@ import {
   HeartOutlined
 } from '@ant-design/icons';
 import { childrenApi, activitiesApi, notificationsApi } from '../../services/api';
+import { withBasePath } from '../../utils/paths';
 
 const { Title, Text } = Typography;
 
@@ -121,7 +122,7 @@ function ParentDashboard() {
                     <Avatar 
                       size={64} 
                       icon={<UserOutlined />} 
-                      src={child.header_url} 
+                      src={withBasePath(child.header_url)}
                       style={{ backgroundColor: '#FF9F43', marginRight: 16 }}
                     />
                     <div>
@@ -179,7 +180,7 @@ function ParentDashboard() {
                           justifyContent: 'center'
                         }}>
                           {photos.length > 0 ? (
-                            <img src={photos[0]} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={withBasePath(photos[0])} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           ) : (
                             <PictureOutlined style={{ fontSize: 24, color: '#ccc' }} />
                           )}
@@ -263,7 +264,7 @@ function ParentDashboard() {
                   {safeParsePhotos(selectedActivity.photos).map((photo, index) => (
                     <Col span={8} key={index}>
                       <Image
-                        src={photo}
+                        src={withBasePath(photo)}
                         style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 4 }}
                       />
                     </Col>

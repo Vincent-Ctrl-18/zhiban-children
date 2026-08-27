@@ -4,6 +4,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const { testConnection } = require('./config/database');
+const { UPLOAD_DIR } = require('./config/paths');
 
 // 导入路由
 const authRoutes = require('./routes/auth');
@@ -22,15 +23,18 @@ const coursesRoutes = require('./routes/courses');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const HOST = process.env.HOST || '127.0.0.1';
+const corsOrigin = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()).filter(Boolean)
+  : true;
 
 // 中间件
-app.use(cors());
+app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // 静态文件服务（用于上传的文件）
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/uploads/courses', express.static(path.join(__dirname, 'uploads/courses')));
+app.use('/uploads', express.static(UPLOAD_DIR));
 
 // API路由
 app.use('/api/auth', authRoutes);
@@ -64,14 +68,14 @@ app.use((req, res) => {
 });
 
 // 启动服务器
-app.listen(PORT, async () => {
+app.listen(PORT, HOST, async () => {
   console.log(`
   ╔═══════════════════════════════════════════════════════════╗
   ║                                                           ║
   ║   🌟 智伴乡童 - 留守儿童关怀平台后端服务                    ║
   ║                                                           ║
-  ║   服务地址: http://localhost:${PORT}                        ║
-  ║   健康检查: http://localhost:${PORT}/api/health             ║
+  ║   服务地址: http://${HOST}:${PORT}                         ║
+  ║   健康检查: http://${HOST}:${PORT}/api/health              ║
   ║                                                           ║
   ╚═══════════════════════════════════════════════════════════╝
   `);

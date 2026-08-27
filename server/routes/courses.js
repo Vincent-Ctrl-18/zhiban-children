@@ -4,16 +4,21 @@ const path = require('path');
 const fs = require('fs');
 const { pool } = require('../config/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const {
+  UPLOAD_DIR,
+  resolveStoredUploadPath,
+  toPublicPath,
+} = require('../config/paths');
 
 const router = express.Router();
 
 // 确保上传目录存在
-const UPLOAD_DIR = path.join(__dirname, '../uploads/courses');
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+const COURSE_UPLOAD_DIR = path.join(UPLOAD_DIR, 'courses');
+if (!fs.existsSync(COURSE_UPLOAD_DIR)) fs.mkdirSync(COURSE_UPLOAD_DIR, { recursive: true });
 
 // multer 配置
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+  destination: (req, file, cb) => cb(null, COURSE_UPLOAD_DIR),
   filename: (req, file, cb) => {
     const unique = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
     const ext = path.extname(file.originalname);
@@ -65,7 +70,7 @@ router.get('/', authenticateToken, async (req, res) => {
     // 确保 file_path 统一有前导斜杠
     const result = rows.map(r => ({
       ...r,
-      file_path: r.file_path.startsWith('/') ? r.file_path : `/${r.file_path}`,
+      file_path: toPublicPath(r.file_path.startsWith('/') ? r.file_path : `/${r.file_path}`),
     }));
 
     res.json(result);
@@ -116,7 +121,7 @@ router.delete('/:id', authenticateToken, requireRole('institution'), async (req,
     if (!rows[0]) return res.status(404).json({ message: '文件不存在或无权限删除' });
 
     // 删除磁盘文件
-    const diskPath = path.join(__dirname, '..', rows[0].file_path);
+    const diskPath = resolveStoredUploadPath(rows[0].file_path);
     if (fs.existsSync(diskPath)) fs.unlinkSync(diskPath);
 
     await pool.query('DELETE FROM course_resources WHERE id = ?', [req.params.id]);

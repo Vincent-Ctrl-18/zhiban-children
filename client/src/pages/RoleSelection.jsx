@@ -17,6 +17,7 @@ import {
   ReadOutlined,
 } from '@ant-design/icons';
 import { Button } from 'antd';
+import { withBasePath } from '../utils/paths';
 
 const roles = [
   {
@@ -66,7 +67,7 @@ const heroSlides = [
   '/show-image1.jpg',
   '/show-image2.jpg',
   '/show-image3.jpg',
-];
+].map(withBasePath);
 
 const stats = [
   { number: '2,600+', label: '服务儿童' },
@@ -232,7 +233,7 @@ function RoleSelection() {
       {/* ========== Navbar (glass on scroll) ========== */}
       <nav className={`site-navbar${navScrolled ? ' navbar-scrolled' : ''}`}>
         <div className="nav-logo">
-          <img src="/logo.png" alt="智伴乡童" className="nav-icon" style={{ width: 36, height: 36, objectFit: 'contain' }} />
+          <img src={withBasePath('/logo.png')} alt="智伴乡童" className="nav-icon" style={{ width: 36, height: 36, objectFit: 'contain' }} />
           智伴乡童
         </div>
         <div className="nav-links">
@@ -366,7 +367,7 @@ function RoleSelection() {
       </section>
 
       {/* ========== CTA Section with parallax bg ========== */}
-      <section className="cta-section" style={{ backgroundImage: 'url(/show-image2.jpg)' }}>
+      <section className="cta-section" style={{ backgroundImage: `url(${withBasePath('/show-image2.jpg')})` }}>
         <div className="cta-overlay" />
         <RevealSection className="cta-content">
           <h2>加入我们，让爱不再留守</h2>
@@ -383,7 +384,7 @@ function RoleSelection() {
         <div className="footer-content">
           <div className="footer-brand">
             <div className="footer-logo">
-              <img src="/logo.png" alt="智伴乡童" style={{ width: 36, height: 36, objectFit: 'contain' }} />
+              <img src={withBasePath('/logo.png')} alt="智伴乡童" style={{ width: 36, height: 36, objectFit: 'contain' }} />
               <span>智伴乡童</span>
             </div>
             <p className="footer-slogan">智伴乡童，暖护童心<br/>让每一个孩子都被温柔以待</p>

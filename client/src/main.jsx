@@ -5,6 +5,7 @@ import { ConfigProvider } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import App from './App'
 import './index.css'
+import { APP_BASE_PATH } from './utils/paths'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -21,7 +22,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         },
       }}
     >
-      <BrowserRouter>
+      <BrowserRouter basename={APP_BASE_PATH || undefined}>
         <App />
       </BrowserRouter>
     </ConfigProvider>

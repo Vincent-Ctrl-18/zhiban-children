@@ -45,6 +45,7 @@ import AdminPanel from './pages/admin/AdminPanel';
 import VerifyEmail from './pages/VerifyEmail';
 import CourseResources from './pages/student/CourseResources';
 import CourseUpload from './pages/institution/CourseUpload';
+import { withBasePath } from './utils/paths';
 
 const { Header, Sider, Content } = Layout;
 
@@ -191,11 +192,11 @@ function App() {
         <div className="logo-container">
           {!collapsed && 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <img src="/logo.png" alt="智伴乡童" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+              <img src={withBasePath('/logo.png')} alt="智伴乡童" style={{ width: 28, height: 28, objectFit: 'contain' }} />
               <span style={{ color: '#2d3436', fontSize: 16, fontWeight: 700 }}>智伴乡童</span>
             </div>
           }
-          {collapsed && <img src="/logo.png" alt="智伴乡童" style={{ width: 28, height: 28, objectFit: 'contain' }} />}
+          {collapsed && <img src={withBasePath('/logo.png')} alt="智伴乡童" style={{ width: 28, height: 28, objectFit: 'contain' }} />}
         </div>
         <Menu
           theme="light"

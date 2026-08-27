@@ -8,6 +8,7 @@ import {
   BookOutlined,
 } from '@ant-design/icons';
 import { coursesApi } from '../../services/api';
+import { withBasePath } from '../../utils/paths';
 
 function formatSize(bytes) {
   if (!bytes) return '';
@@ -199,14 +200,14 @@ function CourseResources() {
             controls
             autoPlay
             style={{ width: '100%', borderRadius: 10, maxHeight: 500, background: '#000' }}
-            src={playingFile.file_path}
+            src={withBasePath(playingFile.file_path)}
           >
             您的浏览器不支持视频播放
           </video>
         )}
         {playingFile?.file_type === 'pdf' && (
           <iframe
-            src={playingFile.file_path}
+            src={withBasePath(playingFile.file_path)}
             style={{ width: '100%', height: 600, border: 'none', borderRadius: 10 }}
             title={playingFile?.title}
           />

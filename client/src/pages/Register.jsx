@@ -13,6 +13,7 @@ import {
   MailOutlined,
 } from '@ant-design/icons';
 import { authApi } from '../services/api';
+import { withBasePath } from '../utils/paths';
 
 const roleConfig = {
   parent:      { name: '家长',       color: '#FF9F43', bg: '#FFF5E6', emoji: '👨‍👩‍👧' },
@@ -93,7 +94,7 @@ function Register({ onLogin }) {
       }} className="login-brand-panel">
         <div style={{ maxWidth: 400, width: '100%', textAlign: 'center' }}>
           <img
-            src="/logo.png"
+            src={withBasePath('/logo.png')}
             alt="智伴乡童"
             style={{ width: 96, height: 96, objectFit: 'contain', marginBottom: 24 }}
           />
@@ -118,7 +119,7 @@ function Register({ onLogin }) {
             {cfg.name}注册入口
           </div>
           <img
-            src="/hero-bg.jpg"
+            src={withBasePath('/hero-bg.jpg')}
             alt=""
             style={{
               width: '100%',

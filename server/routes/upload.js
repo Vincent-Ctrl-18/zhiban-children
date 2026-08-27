@@ -3,11 +3,11 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { authenticateToken } = require('../middleware/auth');
+const { UPLOAD_DIR: uploadDir, toPublicPath } = require('../config/paths');
 
 const router = express.Router();
 
 // 确保上传目录存在
-const uploadDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -56,7 +56,7 @@ router.post('/image', authenticateToken, upload.single('file'), (req, res) => {
 
     // 返回可访问的URL
     const relativePath = path.relative(uploadDir, req.file.path).replace(/\\/g, '/');
-    const url = `/uploads/${relativePath}`;
+    const url = toPublicPath(`/uploads/${relativePath}`);
 
     res.json({
       message: '上传成功',
@@ -79,7 +79,7 @@ router.post('/images', authenticateToken, upload.array('files', 9), (req, res) =
 
     const urls = req.files.map(file => {
       const relativePath = path.relative(uploadDir, file.path).replace(/\\/g, '/');
-      return `/uploads/${relativePath}`;
+      return toPublicPath(`/uploads/${relativePath}`);
     });
 
     res.json({

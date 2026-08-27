@@ -33,7 +33,8 @@ const sendVerifyEmail = async (email, userId) => {
   if (!t) return false;
 
   const token = jwt.sign({ userId, email }, process.env.JWT_SECRET, { expiresIn: '10m' });
-  const link = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?token=${token}`;
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
+  const link = `${frontendUrl}/verify-email?token=${token}`;
 
   await t.sendMail({
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
