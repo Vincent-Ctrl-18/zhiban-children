@@ -33,6 +33,13 @@ sudo gzip > "/var/backups/zhiban/zhiban-database-$DEPLOY_STAMP.sql.gz"
 
 不要盲目重跑 `database/*.sql`；现有迁移脚本并非全部幂等。
 
+本阶段作业辅导会话与成果事件迁移是幂等的，切换新版前单独执行：
+
+```bash
+mysql -h localhost -P 3306 -u zhiban -p zhiban_children \
+  < database/update_ai_homework_phase1.sql
+```
+
 ## 2. 克隆与构建
 
 将 `TARGET_COMMIT` 替换为待部署提交：
@@ -201,3 +208,25 @@ sudo -iu ubuntu pm2 save
 curl -fsS http://127.0.0.1:3001/api/health
 printf '\n'
 ```
+
+## 第二阶段 AI 与成果统计迁移
+
+发布第二阶段版本前，先备份数据库；若第一阶段迁移尚未执行，先执行 `database/update_ai_homework_phase1.sql`，再执行：
+
+```bash
+mysql -u root -p zhiban_children < database/update_ai_phase2.sql
+mysql -u root -p zhiban_children < database/update_ai_memory_history.sql
+```
+
+建议先保持 `AI_SESSION_SUMMARY_ENABLED=true`、`AI_MEMORY_READ_ENABLED=false`、`AI_MEMORY_WRITE_ENABLED=false` 做摘要影子验证；确认无串话和敏感记忆后，再逐步开启记忆读写与 `AI_HISTORY_V2_ENABLED=true`。
+
+确认 `ai_sessions`、`ai_messages`、`product_events`、`feature_usage_daily`、`course_progress`、`ai_reports` 和 `companion_risk_events` 均已创建后，再发布后端。发布后执行一次：
+
+```bash
+cd server
+npm run metrics:aggregate -- --date=$(date -d yesterday +%F)
+npm run prompts:seed
+npm run ai:memory-jobs
+```
+
+生产环境每天凌晨运行同一命令；命令可重复执行，不会重复增加统计。若迁移未执行，AI 新接口和成果看板会返回明确的 `503`，不会显示示例数字。

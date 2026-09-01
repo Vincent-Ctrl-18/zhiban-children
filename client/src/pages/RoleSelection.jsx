@@ -18,6 +18,7 @@ import {
 } from '@ant-design/icons';
 import { Button } from 'antd';
 import { withBasePath } from '../utils/paths';
+import { statisticsApi } from '../services/api';
 
 const roles = [
   {
@@ -68,13 +69,6 @@ const heroSlides = [
   '/show-image2.jpg',
   '/show-image3.jpg',
 ].map(withBasePath);
-
-const stats = [
-  { number: '2,600+', label: '服务儿童' },
-  { number: '180+', label: '托管机构' },
-  { number: '950+', label: '志愿者' },
-  { number: '36', label: '覆盖区县' },
-];
 
 const features = [
   {
@@ -183,6 +177,7 @@ function RoleSelection() {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [navScrolled, setNavScrolled] = useState(false);
+  const [impact, setImpact] = useState(null);
   const slideTimer = useRef(null);
 
   const handleRoleSelect = (role) => {
@@ -198,6 +193,10 @@ function RoleSelection() {
     const onScroll = () => setNavScrolled(window.scrollY > 60);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    statisticsApi.getImpact().then(setImpact).catch(() => setImpact(null));
   }, []);
 
   /* Auto carousel */
@@ -305,9 +304,12 @@ function RoleSelection() {
       {/* ========== Stats Bar (animated counters) ========== */}
       <RevealSection className="stats-bar-wrapper">
         <section className="stats-bar">
-          {stats.map((s, i) => (
-            <StatItem key={i} number={s.number} label={s.label} />
-          ))}
+          {impact ? [
+            { number: String(impact.metrics?.uniqueUsers || 0), label: '独立使用人数' },
+            { number: String(impact.metrics?.usageCount || 0), label: '有效服务次数' },
+            { number: String(impact.metrics?.completedCourses || 0), label: '课程完成' },
+            { number: String(impact.metrics?.completedHomework || 0), label: '作业已解决' },
+          ].map((s, i) => <StatItem key={i} number={s.number} label={s.label} />) : <div style={{ padding: '18px 24px', color: '#6b7280' }}>项目成果数据正在累计，首批汇总完成后展示</div>}
         </section>
       </RevealSection>
 

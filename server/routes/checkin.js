@@ -1,6 +1,7 @@
 const express = require('express');
 const { pool } = require('../config/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { recordEvent } = require('../services/eventService');
 
 const router = express.Router();
 
@@ -85,6 +86,8 @@ router.post('/checkin', authenticateToken, requireRole('institution'), async (re
       [childId, institutionId, today, now, checkinBy, notes]
     );
 
+    await recordEvent({ eventName: 'checkin_completed', userId: req.user.id, userRole: 'institution', institutionId, objectId: childId, requestId: `checkin:${childId}:${today}` });
+
     res.status(201).json({ message: '签到成功', id: result.insertId });
   } catch (error) {
     console.error('签到失败:', error);
@@ -109,6 +112,7 @@ router.post('/batch-checkin', authenticateToken, requireRole('institution'), asy
            ON DUPLICATE KEY UPDATE checkin_time = ?, checkin_by = ?`,
           [childId, institutionId, today, now, checkinBy, now, checkinBy]
         );
+        await recordEvent({ eventName: 'checkin_completed', userId: req.user.id, userRole: 'institution', institutionId, objectId: childId, requestId: `checkin:${childId}:${today}` });
         successCount++;
       } catch (e) {
         console.error(`儿童 ${childId} 签到失败:`, e);
@@ -138,6 +142,8 @@ router.post('/checkout', authenticateToken, requireRole('institution'), async (r
     if (result.affectedRows === 0) {
       return res.status(400).json({ message: '未找到签到记录，请先签到' });
     }
+
+    await recordEvent({ eventName: 'checkout_completed', userId: req.user.id, userRole: 'institution', institutionId: req.user.institutionId, objectId: childId, requestId: `checkout:${childId}:${today}` });
 
     res.json({ message: '签退成功' });
   } catch (error) {

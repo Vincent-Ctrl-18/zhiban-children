@@ -176,6 +176,8 @@ body {
 .main-content {
   padding: 24px;
   min-height: calc(100vh - 64px);
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 /* Stat cards */
@@ -1474,6 +1476,21 @@ img { max-width: 100%; height: auto; }
 .chat-avatar {
   flex-shrink: 0;
 }
+.homework-failed-action,
+.homework-complete-action {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(79, 121, 66, 0.12);
+}
+.homework-failed-action {
+  justify-content: space-between;
+}
+.homework-complete-action {
+  justify-content: flex-end;
+}
 
 /* 学习报告内容样式 */
 .report-content {
@@ -1617,4 +1634,124 @@ img { max-width: 100%; height: auto; }
   .learning-report-page .page-title-bar {
     margin-bottom: 16px;
   }
+}
+.ai-history-layout {
+  display: grid;
+  grid-template-columns: minmax(340px, 0.9fr) minmax(420px, 1.35fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.ai-history-mobile-back {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .ai-history-layout {
+    display: block;
+  }
+
+  .ai-history-layout.has-detail .ai-history-list-panel,
+  .ai-history-detail-empty {
+    display: none;
+  }
+
+  .ai-history-mobile-back {
+    display: inline-flex;
+  }
+}
+
+/* 学习资源 / 电子书 */
+.learning-resources-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  min-width: 0;
+}
+.learning-resource-filters {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.learning-resource-filters .ant-input-affix-wrapper { width: min(360px, 100%); }
+.learning-resource-filters .ant-select { min-width: 140px; }
+.learning-resource-count { margin-left: auto; color: var(--text-light); font-size: 13px; }
+.learning-resource-panel {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  min-width: 0;
+}
+.learning-resource-card { display: flex; flex-direction: column; }
+.learning-resource-cover {
+  height: 170px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 52px;
+  color: rgba(255,255,255,.9);
+}
+.learning-resource-cover.video { background: linear-gradient(135deg, #1e3a5f, #2d6a9f); }
+.learning-resource-cover.document { background: linear-gradient(135deg, #7f1d1d, #dc2626); }
+.learning-resource-cover.ebook { background: linear-gradient(135deg, #7c4a21, #e89a43); }
+.learning-resource-cover img { width: 100%; height: 100%; object-fit: cover; }
+.learning-resource-type { position: absolute; top: 10px; right: 10px; border-radius: 6px; font-weight: 600; }
+.learning-resource-body { padding: 14px 16px; display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.learning-resource-title { font-size: 15px; font-weight: 650; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.learning-resource-author { color: var(--text-secondary); font-size: 12px; margin-top: 4px; }
+.learning-resource-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; color: var(--text-light); font-size: 12px; margin-top: 10px; }
+.learning-resource-meta .ant-tag { margin: 0; padding: 0; background: transparent; color: var(--text-light); }
+.learning-resource-meta .anticon { margin-right: 3px; }
+.learning-resource-progress { margin-top: 10px; }
+.learning-resource-progress .ant-progress { margin: 0 0 2px; }
+.learning-resource-progress .ant-typography { font-size: 12px; }
+.learning-resource-actions { margin-top: auto; padding-top: 10px; display: flex; justify-content: space-between; align-items: center; }
+.learning-resource-actions .ant-btn-link { padding: 0; color: var(--primary-color); font-weight: 600; }
+.ebook-upload-panel { background: #fff; padding: 24px; border-radius: 16px; box-shadow: var(--shadow-sm); margin-bottom: 24px; }
+.ebook-upload-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+.form-help { color: var(--text-light); font-size: 12px; margin-top: 6px; }
+
+/* PDF 阅读器 */
+.pdf-reader { min-height: calc(100vh - 112px); margin: -8px -8px -24px; background: #252525; color: #fff; display: flex; flex-direction: column; }
+.pdf-reader-header { min-height: 64px; padding: 12px 20px; display: flex; align-items: center; gap: 16px; background: #fff; color: var(--text-main); }
+.pdf-reader-header .ant-btn { flex-shrink: 0; }
+.pdf-reader-title { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+.pdf-reader-title .ant-typography { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pdf-reader-header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.pdf-reader-progress { background: #fff; padding: 0 20px 8px; display: flex; gap: 8px; align-items: center; color: var(--text-secondary); font-size: 12px; }
+.pdf-reader-progress .ant-progress { flex: 1; margin: 0; }
+.pdf-reader-stage { flex: 1; overflow: auto; padding: 24px; display: flex; justify-content: center; align-items: flex-start; }
+.pdf-reader-canvas-wrap { position: relative; min-height: 260px; background: #fff; box-shadow: 0 12px 36px rgba(0,0,0,.28); }
+.pdf-reader-canvas-wrap canvas { display: block; max-width: min(100%, 860px); height: auto; }
+.pdf-reader-rendering { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(255,255,255,.55); }
+.pdf-reader-toolbar { position: sticky; bottom: 0; padding: 10px 20px; background: #fff; color: var(--text-main); display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; box-shadow: 0 -3px 12px rgba(0,0,0,.12); }
+.pdf-reader-page-jump { display: flex; align-items: center; gap: 6px; }
+.pdf-reader-page-jump .ant-input-number { width: 68px; }
+.pdf-reader-zoom { display: flex; align-items: center; gap: 4px; margin-left: 14px; }
+.pdf-reader-state { min-height: 50vh; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; padding: 24px; }
+
+@media (max-width: 768px) {
+  .main-content { padding: 12px; }
+  .learning-resource-filters { align-items: stretch; padding: 14px; }
+  .learning-resource-filters .ant-input-affix-wrapper,
+  .learning-resource-filters .ant-select { width: 100%; min-width: 0; }
+  .learning-resource-count { margin-left: 0; }
+  .learning-resource-panel { padding: 14px; }
+  .learning-resource-panel .ant-tabs-nav-wrap { overflow-x: auto; }
+  .ebook-upload-panel { padding: 16px; }
+  .ebook-upload-grid { grid-template-columns: 1fr; }
+  .pdf-reader { margin: -12px; min-height: calc(100vh - 88px); }
+  .pdf-reader-header { padding: 10px 12px; gap: 8px; }
+  .pdf-reader-header .ant-btn > span:last-child { display: none; }
+  .pdf-reader-stage { padding: 12px 8px; }
+  .pdf-reader-toolbar { padding: 8px; gap: 6px; }
+  .pdf-reader-zoom { margin-left: 0; }
 }

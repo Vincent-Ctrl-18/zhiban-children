@@ -1,6 +1,7 @@
 const express = require('express');
 const { pool } = require('../config/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { recordEvent } = require('../services/eventService');
 
 const router = express.Router();
 
@@ -107,6 +108,7 @@ router.post('/', authenticateToken, requireRole('institution'), async (req, res)
       ]
     );
 
+    await recordEvent({ eventName: 'safety_check_completed', userId: checkerId, userRole: 'institution', institutionId, requestId: `safety:${institutionId}:${today}` });
     res.json({ message: '安全检查提交成功' });
   } catch (error) {
     console.error('提交安全检查失败:', error);

@@ -20,6 +20,7 @@ import {
   ReadOutlined,
   PlayCircleOutlined,
   UploadOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons';
 
 // 页面组件
@@ -44,7 +45,9 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminPanel from './pages/admin/AdminPanel';
 import VerifyEmail from './pages/VerifyEmail';
 import CourseResources from './pages/student/CourseResources';
+import PdfReader from './pages/student/PdfReader';
 import CourseUpload from './pages/institution/CourseUpload';
+import AIHistory from './pages/student/AIHistory';
 import { withBasePath } from './utils/paths';
 
 const { Header, Sider, Content } = Layout;
@@ -58,7 +61,7 @@ const menuConfig = {
     { key: '/institution/safety', icon: <SafetyOutlined />, label: '安全检查' },
     { key: '/institution/activities', icon: <CalendarOutlined />, label: '活动记录' },
     { key: '/institution/notifications', icon: <BellOutlined />, label: '通知管理' },
-    { key: '/institution/courses', icon: <UploadOutlined />, label: '课程资源' },
+    { key: '/institution/courses', icon: <UploadOutlined />, label: '学习资源' },
   ],
   parent: [
     { key: '/parent', icon: <HomeOutlined />, label: '首页' },
@@ -75,12 +78,14 @@ const menuConfig = {
     { key: '/student/homework', icon: <BookOutlined />, label: '作业帮手' },
     { key: '/student/report', icon: <FileTextOutlined />, label: '学习报告' },
     { key: '/student/chat', icon: <HeartOutlined />, label: '倾诉小屋' },
-    { key: '/student/courses', icon: <PlayCircleOutlined />, label: '课程资源' },
+    { key: '/student/courses', icon: <PlayCircleOutlined />, label: '学习资源' },
+    { key: '/student/history', icon: <HistoryOutlined />, label: '最近学习' },
   ],
 };
 
 function App() {
   const [user, setUser] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -92,6 +97,7 @@ function App() {
     if (storedUser && token) {
       setUser(JSON.parse(storedUser));
     }
+    setAuthReady(true);
   }, []);
 
   const handleLogin = (userData, token) => {
@@ -156,6 +162,10 @@ function App() {
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     );
+  }
+
+  if (!authReady) {
+    return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: '#4F7942' }}>正在打开学习空间…</div>;
   }
 
   // 未登录时显示的页面
@@ -274,6 +284,8 @@ function App() {
             <Route path="/student/report" element={<LearningReport />} />
             <Route path="/student/chat" element={<ChatCompanion />} />
             <Route path="/student/courses" element={<CourseResources />} />
+            <Route path="/student/resources/:id/read" element={<PdfReader />} />
+            <Route path="/student/history" element={<AIHistory />} />
 
             {/* 机构课程路由 */}
             <Route path="/institution/courses" element={<CourseUpload />} />

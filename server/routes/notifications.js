@@ -1,6 +1,7 @@
 const express = require('express');
 const { pool } = require('../config/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { recordEvent } = require('../services/eventService');
 
 const router = express.Router();
 
@@ -76,6 +77,8 @@ router.post('/', authenticateToken, requireRole('institution'), async (req, res)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [institutionId, title, content, type || 'announcement', isPublic !== false, createdBy]
     );
+
+    await recordEvent({ eventName: 'notification_published', userId: createdBy, userRole: 'institution', institutionId, objectId: result.insertId });
 
     res.status(201).json({ message: '通知发布成功', id: result.insertId });
   } catch (error) {

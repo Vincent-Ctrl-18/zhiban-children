@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, Row, Col, Button, Form, Input, Select, Typography, Tag, Spin, Divider, Rate, Space, Empty, message } from 'antd';
 import {
   FileTextOutlined,
@@ -19,12 +19,17 @@ const { Option } = Select;
 function LearningReport() {
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState(null);
+  const [reportHistory, setReportHistory] = useState([]);
   const [form] = Form.useForm();
+
+  useEffect(() => {
+    aiApi.learningReportHistory(5).then(setReportHistory).catch(() => {});
+  }, []);
 
   const handleGenerate = async (values) => {
     setLoading(true);
     try {
-      const res = await aiApi.learningReport({
+      const res = await aiApi.learningReportGenerate({
         grade: values.grade,
         subjects: values.subjects,
         strengths: values.strengths,
@@ -32,7 +37,8 @@ function LearningReport() {
         studyHours: values.studyHours,
         goals: values.goals,
       });
-      setReport(res.reply || '暂时无法生成报告，请稍后重试。');
+      setReport(res.report || { summary: '暂时无法生成报告，请稍后重试。' });
+      setReportHistory((previous) => [{ id: res.id, periodStart: res.evidence?.period?.start, periodEnd: res.evidence?.period?.end, report: res.report, createdAt: new Date().toISOString() }, ...previous].slice(0, 5));
     } catch (error) {
       message.error('生成报告失败：' + (error.message || '请稍后重试'));
     } finally {
@@ -163,8 +169,13 @@ function LearningReport() {
                 </Paragraph>
               </div>
             ) : report ? (
-              <div className="report-content" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}>
-                {report}
+              <div className="report-content" style={{ lineHeight: 1.8 }}>
+                <Typography.Title level={4}>{report.summary || '学习情况总结'}</Typography.Title>
+                {Array.isArray(report.evidence) && report.evidence.length > 0 && <><Typography.Title level={5}>本周证据</Typography.Title><ul>{report.evidence.map((item, index) => <li key={index}>{typeof item === 'string' ? item : item.text || item.source || JSON.stringify(item)}</li>)}</ul></>}
+                {Array.isArray(report.observations) && report.observations.length > 0 && <><Typography.Title level={5}>观察与建议</Typography.Title><ul>{report.observations.map((item, index) => <li key={index}>{typeof item === 'string' ? item : item.text || JSON.stringify(item)}</li>)}</ul></>}
+                {Array.isArray(report.actions) && report.actions.length > 0 && <><Typography.Title level={5}>本周行动</Typography.Title><ul>{report.actions.map((item, index) => <li key={index}>{typeof item === 'string' ? item : item.text || JSON.stringify(item)}</li>)}</ul></>}
+                {report.nextCheck && <Paragraph><strong>下次检查：</strong>{report.nextCheck}</Paragraph>}
+                {report.limitations && <Paragraph type="secondary">{report.limitations}</Paragraph>}
               </div>
             ) : (
               <Empty
@@ -180,6 +191,7 @@ function LearningReport() {
           </Card>
         </Col>
       </Row>
+      {reportHistory.length > 0 && <Card bordered={false} style={{ marginTop: 20, borderRadius: 16 }} title="最近生成的报告"><Space wrap>{reportHistory.map((item) => <Tag key={item.id} color="green" style={{ cursor: 'pointer' }} onClick={() => setReport(item.report)}>{item.periodEnd || '最近一次'}</Tag>)}</Space></Card>}
     </div>
   );
 }

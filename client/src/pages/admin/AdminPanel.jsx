@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Layout, Menu, Card, Row, Col, Statistic, Table, Tag, Button, Input, Select, Space, Modal, message, Typography, Badge, Tabs, Descriptions, Empty, Tooltip, Slider, InputNumber } from 'antd';
+import { Layout, Menu, Card, Row, Col, Statistic, Table, Tag, Button, Input, Select, Space, Modal, message, Typography, Badge, Tabs, Descriptions, Empty, Tooltip, Slider, InputNumber, Alert, Switch } from 'antd';
 import {
   DashboardOutlined,
   AuditOutlined,
@@ -32,6 +32,7 @@ import {
   MessageOutlined,
 } from '@ant-design/icons';
 import { adminApi } from '../../services/api';
+import ReactECharts from 'echarts-for-react';
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
@@ -63,6 +64,7 @@ function AdminPanel({ onLogout }) {
     { key: 'dashboard', icon: <DashboardOutlined />, label: '数据总览' },
     { key: 'users', icon: <TeamOutlined />, label: '用户管理' },
     { key: 'audit', icon: <AuditOutlined />, label: '资源审核' },
+    { key: 'ebooks', icon: <ReadOutlined />, label: '电子书审核' },
     { key: 'apikey', icon: <KeyOutlined />, label: 'API 密钥' },
     { key: 'prompts', icon: <MessageOutlined />, label: 'AI Prompt' },
   ];
@@ -103,6 +105,7 @@ function AdminPanel({ onLogout }) {
             {activeTab === 'dashboard' && <><BarChartOutlined style={{ color: '#6c5ce7' }} /> 数据总览</>}
             {activeTab === 'users' && <><TeamOutlined style={{ color: '#6c5ce7' }} /> 用户管理</>}
             {activeTab === 'audit' && <><AuditOutlined style={{ color: '#6c5ce7' }} /> 资源审核</>}
+            {activeTab === 'ebooks' && <><ReadOutlined style={{ color: '#6c5ce7' }} /> 电子书审核</>}
             {activeTab === 'apikey' && <><KeyOutlined style={{ color: '#6c5ce7' }} /> API 密钥管理</>}
             {activeTab === 'prompts' && <><MessageOutlined style={{ color: '#6c5ce7' }} /> AI Prompt 管理</>}
           </Title>
@@ -115,6 +118,7 @@ function AdminPanel({ onLogout }) {
           {activeTab === 'dashboard' && <DashboardTab />}
           {activeTab === 'users' && <UsersTab />}
           {activeTab === 'audit' && <AuditTab />}
+          {activeTab === 'ebooks' && <EbookAuditTab />}
           {activeTab === 'apikey' && <ApiKeyTab />}
           {activeTab === 'prompts' && <PromptTab />}
         </Content>
@@ -127,6 +131,16 @@ function AdminPanel({ onLogout }) {
 function DashboardTab() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
+  const [homeworkLoading, setHomeworkLoading] = useState(true);
+  const [homeworkRange, setHomeworkRange] = useState('7d');
+  const [homeworkStats, setHomeworkStats] = useState(null);
+  const [projectRange, setProjectRange] = useState('7d');
+  const [projectStats, setProjectStats] = useState(null);
+  const [projectLoading, setProjectLoading] = useState(true);
+  const [projectFeature, setProjectFeature] = useState('');
+  const [projectRole, setProjectRole] = useState('');
+  const [projectInstitution, setProjectInstitution] = useState('');
+  const [riskStats, setRiskStats] = useState([]);
 
   const fetchStats = async () => {
     setLoading(true);
@@ -141,6 +155,36 @@ function DashboardTab() {
   };
 
   useEffect(() => { fetchStats(); }, []);
+
+  const fetchHomeworkStats = async () => {
+    setHomeworkLoading(true);
+    try {
+      const data = await adminApi.getHomeworkStatistics(homeworkRange);
+      setHomeworkStats(data);
+    } catch (error) {
+      message.error('获取 AI 作业统计失败');
+    } finally {
+      setHomeworkLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchHomeworkStats(); }, [homeworkRange]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setProjectLoading(true);
+    adminApi.getProjectStatistics({ range: projectRange, featureCode: projectFeature || undefined, role: projectRole || undefined, institutionId: projectInstitution || undefined }).then((data) => { if (!cancelled) setProjectStats(data); }).catch(() => { if (!cancelled) setProjectStats(null); }).finally(() => { if (!cancelled) setProjectLoading(false); });
+    return () => { cancelled = true; };
+  }, [projectRange, projectFeature, projectRole, projectInstitution]);
+  useEffect(() => { adminApi.getCompanionRiskStatistics().then(setRiskStats).catch(() => setRiskStats([])); }, []);
+
+  const exportProjectCsv = async () => {
+    try {
+      const blob = await adminApi.downloadProjectStatisticsCsv({ range: projectRange, featureCode: projectFeature || undefined, role: projectRole || undefined, institutionId: projectInstitution || undefined });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a'); anchor.href = url; anchor.download = `project-metrics-${projectRange}.csv`; anchor.click(); URL.revokeObjectURL(url);
+    } catch (error) { message.error(error.message || 'CSV 导出暂不可用'); }
+  };
 
   if (loading || !stats) {
     return <Card loading={loading} style={{ borderRadius: 12 }} />;
@@ -163,6 +207,42 @@ function DashboardTab() {
     { title: '安全检查', value: stats.safetyChecks, icon: <SafetyOutlined />, color: '#f59e0b' },
     { title: '通知数', value: stats.notifications, icon: <BellOutlined />, color: '#8b5cf6' },
   ];
+
+  const homeworkTotals = homeworkStats?.totals || {
+    attempts: 0,
+    successes: 0,
+    failures: 0,
+    completedSessions: 0,
+    uniqueStudents: 0,
+    successRate: 0,
+    completionRate: 0,
+  };
+  const homeworkTrend = homeworkStats?.trend || [];
+  const homeworkTrendOption = {
+    tooltip: { trigger: 'axis' },
+    legend: { top: 0, right: 0, textStyle: { color: '#6b7280', fontSize: 12 } },
+    grid: { top: 38, left: 42, right: 20, bottom: 30 },
+    xAxis: {
+      type: 'category',
+      data: homeworkTrend.map((item) => item.date.slice(5)),
+      axisLine: { lineStyle: { color: '#e5e7eb' } },
+      axisTick: { show: false },
+      axisLabel: { color: '#9ca3af', fontSize: 11 },
+    },
+    yAxis: {
+      type: 'value',
+      minInterval: 1,
+      splitLine: { lineStyle: { color: '#f3f4f6', type: 'dashed' } },
+      axisLabel: { color: '#9ca3af', fontSize: 11 },
+      axisLine: { show: false },
+      axisTick: { show: false },
+    },
+    series: [
+      { name: '提交', type: 'line', smooth: true, data: homeworkTrend.map((item) => item.attempts), lineStyle: { color: '#FF9F43', width: 2 }, itemStyle: { color: '#FF9F43' } },
+      { name: '成功', type: 'line', smooth: true, data: homeworkTrend.map((item) => item.successes), lineStyle: { color: '#1dd1a1', width: 2 }, itemStyle: { color: '#1dd1a1' } },
+      { name: '完成', type: 'line', smooth: true, data: homeworkTrend.map((item) => item.completions), lineStyle: { color: '#6c5ce7', width: 2 }, itemStyle: { color: '#6c5ce7' } },
+    ],
+  };
 
   return (
     <div>
@@ -247,6 +327,85 @@ function DashboardTab() {
             </Col>
           ))}
         </Row>
+      </Card>
+
+      <Card
+        title={<span style={{ fontSize: 17, fontWeight: 600 }}><BookOutlined style={{ color: '#FF9F43', marginRight: 8 }} />AI 作业辅导成果</span>}
+        bordered={false}
+        style={{ borderRadius: 12, marginTop: 24 }}
+        extra={(
+          <Space size={8}>
+            <Text type="secondary">统计范围</Text>
+            <Select
+              size="small"
+              value={homeworkRange}
+              onChange={setHomeworkRange}
+              options={[{ value: '7d', label: '近 7 天' }, { value: '30d', label: '近 30 天' }, { value: 'all', label: '全部' }]}
+              style={{ width: 92 }}
+            />
+          </Space>
+        )}
+      >
+        {homeworkStats?.unavailable && (
+          <Alert type="info" showIcon message="作业成果统计表尚未迁移，当前显示为 0。" style={{ marginBottom: 16 }} />
+        )}
+        <Row gutter={[12, 12]}>
+          {[
+            { title: '提交次数', value: homeworkTotals.attempts, color: '#FF9F43' },
+            { title: '成功回复', value: homeworkTotals.successes, color: '#1dd1a1' },
+            { title: '失败次数', value: homeworkTotals.failures, color: '#fc5c65' },
+            { title: '已解决辅导', value: homeworkTotals.completedSessions, color: '#6c5ce7' },
+            { title: '使用学生', value: homeworkTotals.uniqueStudents, color: '#3B82F6' },
+            { title: '成功率', value: `${(homeworkTotals.successRate * 100).toFixed(1)}%`, color: '#00b894' },
+            { title: '完成率', value: `${(homeworkTotals.completionRate * 100).toFixed(1)}%`, color: '#8b5cf6' },
+          ].map((item) => (
+            <Col xs={12} sm={8} md={Math.floor(24 / 7)} key={item.title}>
+              <Card loading={homeworkLoading && !homeworkStats} bordered={false} style={{ borderRadius: 10, background: '#fafafa' }}>
+                <Statistic title={item.title} value={item.value} valueStyle={{ color: item.color, fontSize: 24 }} />
+              </Card>
+            </Col>
+          ))}
+        </Row>
+        <div style={{ marginTop: 20 }}>
+          {homeworkTrend.length > 0 ? (
+            <ReactECharts option={homeworkTrendOption} style={{ height: 260 }} />
+          ) : (
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={homeworkLoading ? '正在加载趋势...' : '当前范围暂无作业辅导数据'} />
+          )}
+        </div>
+      </Card>
+
+      <Card title={<span style={{ fontSize: 17, fontWeight: 600 }}><SafetyOutlined style={{ color: '#ff6b6b', marginRight: 8 }} />谈心安全事件</span>} bordered={false} style={{ borderRadius: 12, marginTop: 24 }} extra={<Text type="secondary">近 30 天，仅显示分类与处理状态</Text>}>
+        {riskStats.length > 0 ? <Space wrap>{riskStats.map((item) => <Tag key={`${item.category}-${item.severity}-${item.status}`} color={item.severity === 'critical' ? 'red' : item.severity === 'high' ? 'volcano' : 'gold'}>{item.category} · {item.status}：{item.count}</Tag>)}</Space> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无待处理安全事件" />}
+      </Card>
+
+      <Card
+        title={<span style={{ fontSize: 17, fontWeight: 600 }}><RiseOutlined style={{ color: '#1dd1a1', marginRight: 8 }} />全站成果数据</span>}
+        bordered={false}
+        style={{ borderRadius: 12, marginTop: 24 }}
+        extra={<Space size={8}><Text type="secondary">统计范围</Text><Select size="small" value={projectRange} onChange={setProjectRange} options={[{ value: '7d', label: '近 7 天' }, { value: '30d', label: '近 30 天' }, { value: 'all', label: '全部' }]} style={{ width: 92 }} /></Space>}
+      >
+        <Space wrap size={8} style={{ marginBottom: 12 }}>
+          <Select allowClear size="small" value={projectFeature || undefined} onChange={(value) => setProjectFeature(value || '')} placeholder="功能筛选" options={[{ value: 'homework', label: '作业' }, { value: 'course', label: '课程' }, { value: 'companion', label: '谈心' }, { value: 'learning_report', label: '报告' }]} style={{ width: 110 }} />
+          <Select allowClear size="small" value={projectRole || undefined} onChange={(value) => setProjectRole(value || '')} placeholder="角色筛选" options={[{ value: 'student', label: '学生' }, { value: 'institution', label: '机构' }, { value: 'government', label: '政府' }, { value: 'resource', label: '资源方' }]} style={{ width: 110 }} />
+          <Input size="small" value={projectInstitution} onChange={(event) => setProjectInstitution(event.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="机构 ID" style={{ width: 90 }} />
+          <Button size="small" icon={<ReloadOutlined />} onClick={exportProjectCsv}>导出 CSV</Button>
+        </Space>
+        {projectStats ? <>
+          <Row gutter={[12, 12]}>
+            {[
+              ['有效使用次数', projectStats.totals.usageCount, '#FF9F43'],
+              ['成功动作', projectStats.totals.successCount, '#1dd1a1'],
+              ['有效完成', projectStats.totals.completionCount, '#6c5ce7'],
+              ['独立使用者', projectStats.totals.uniqueUsers, '#3B82F6'],
+              ['课程完成', projectStats.totals.completedCourses, '#00b894'],
+              ['作业已解决', projectStats.totals.completedHomework, '#8b5cf6'],
+              ['报告生成', projectStats.totals.reportsGenerated, '#e17055'],
+              ['谈心服务', projectStats.totals.companionUses, '#ff6b6b'],
+            ].map(([title, value, color]) => <Col xs={12} sm={8} md={6} key={title}><Card loading={projectLoading} bordered={false} style={{ borderRadius: 10, background: '#fafafa' }}><Statistic title={title} value={value} valueStyle={{ color, fontSize: 24 }} /></Card></Col>)}
+          </Row>
+          {projectStats.trend?.length > 0 ? <ReactECharts option={{ tooltip: { trigger: 'axis' }, legend: { top: 0 }, grid: { top: 35, left: 42, right: 20, bottom: 30 }, xAxis: { type: 'category', data: projectStats.trend.map((item) => item.date.slice(5)) }, yAxis: { type: 'value', minInterval: 1 }, series: [{ name: '有效使用', type: 'line', smooth: true, data: projectStats.trend.map((item) => item.usageCount), itemStyle: { color: '#FF9F43' } }, { name: '完成', type: 'line', smooth: true, data: projectStats.trend.map((item) => item.completionCount), itemStyle: { color: '#6c5ce7' } }] }} style={{ height: 240, marginTop: 16 }} /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="当前范围暂无成果事件" />}
+        </> : <Alert type="info" showIcon message="全站成果统计暂不可用" description="请先执行第二阶段数据库迁移。" />}
       </Card>
     </div>
   );
@@ -619,6 +778,107 @@ function AuditTab() {
   );
 }
 
+// ========== 电子书审核 Tab ==========
+function EbookAuditTab() {
+  const [loading, setLoading] = useState(true);
+  const [books, setBooks] = useState([]);
+  const [status, setStatus] = useState('');
+  const [detail, setDetail] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [rejectingId, setRejectingId] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
+
+  const fetchBooks = async () => {
+    setLoading(true);
+    try { setBooks(await adminApi.getCourses(status ? { status } : undefined)); }
+    catch (error) { message.error(error.message || '获取电子书列表失败'); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchBooks(); }, [status]);
+
+  const review = async (id, nextStatus, reason = '') => {
+    try {
+      await adminApi.reviewCourse(id, nextStatus, reason);
+      message.success(nextStatus === 'published' ? '电子书已发布' : nextStatus === 'disabled' ? '电子书已下架' : '电子书已拒绝');
+      fetchBooks();
+    } catch (error) { message.error(error.message || '审核操作失败'); }
+  };
+
+  const openPreview = async (book) => {
+    try {
+      const response = await fetch(adminApi.courseContentUrl(book.id), { headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` } });
+      if (!response.ok) throw new Error('无法预览该电子书');
+      const url = URL.createObjectURL(await response.blob());
+      setPreviewUrl(url);
+    } catch (error) { message.error(error.message || '预览失败'); }
+  };
+
+  const closePreview = () => { if (previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(''); };
+
+  const columns = [
+    { title: '书名', dataIndex: 'title', key: 'title', ellipsis: true, width: 220 },
+    { title: '作者', dataIndex: 'author', key: 'author', width: 120 },
+    { title: '分类', dataIndex: 'category', key: 'category', width: 110, render: (value) => <Tag>{value || '-'}</Tag> },
+    { title: '适读年级', key: 'grade', width: 120, render: (_, row) => `${row.grade_min || '-'}—${row.grade_max || '-'}` },
+    {
+      title: '下载', dataIndex: 'allow_download', key: 'allow_download', width: 90,
+      render: (value, row) => <Switch size="small" checked={Boolean(value)} onChange={async (checked) => { try { await adminApi.updateCourseDownloadPolicy(row.id, checked); fetchBooks(); } catch (error) { message.error(error.message || '更新下载权限失败'); } }} />,
+    },
+    {
+      title: '状态', dataIndex: 'review_status', key: 'review_status', width: 100,
+      render: (value) => <Tag color={{ pending: 'orange', published: 'green', rejected: 'red', disabled: 'default' }[value] || 'default'}>{{ pending: '待审核', published: '已发布', rejected: '已拒绝', disabled: '已下架' }[value] || value}</Tag>,
+    },
+    {
+      title: '操作', key: 'action', width: 250,
+      render: (_, row) => (
+        <Space size={4} wrap>
+          <Button type="link" size="small" onClick={() => setDetail(row)}>详情</Button>
+          <Button type="link" size="small" onClick={() => openPreview(row)}>预览</Button>
+          {row.review_status === 'pending' && <Button type="link" size="small" style={{ color: '#52c41a' }} onClick={() => review(row.id, 'published')}>发布</Button>}
+          {row.review_status === 'pending' && <Button type="link" size="small" danger onClick={() => { setRejectingId(row.id); setRejectReason(''); }}>拒绝</Button>}
+          {row.review_status === 'published' && <Button type="link" size="small" danger onClick={() => review(row.id, 'disabled')}>下架</Button>}
+          {row.review_status === 'disabled' && <Button type="link" size="small" onClick={() => review(row.id, 'published')}>重新发布</Button>}
+        </Space>
+      ),
+    },
+  ];
+
+  return (
+    <div>
+      <Card bordered={false} style={{ borderRadius: 10, marginBottom: 16 }}>
+        <Space wrap>
+          <Select value={status} onChange={setStatus} style={{ width: 140 }} options={[{ value: '', label: '全部状态' }, { value: 'pending', label: '待审核' }, { value: 'published', label: '已发布' }, { value: 'rejected', label: '已拒绝' }, { value: 'disabled', label: '已下架' }]} />
+          <Text type="secondary">机构提交的电子书需要审核通过后才会展示给学生。</Text>
+        </Space>
+      </Card>
+      <Card bordered={false} style={{ borderRadius: 10 }}>
+        <Table columns={columns} dataSource={books} rowKey="id" loading={loading} pagination={{ pageSize: 10, showTotal: (total) => `共 ${total} 本` }} scroll={{ x: 1050 }} locale={{ emptyText: <Empty description="暂无电子书" /> }} />
+      </Card>
+      <Modal title="电子书详情" open={!!detail} onCancel={() => setDetail(null)} footer={<Button onClick={() => setDetail(null)}>关闭</Button>} width={620}>
+        {detail && <Descriptions bordered size="small" column={2}>
+          <Descriptions.Item label="书名" span={2}>{detail.title}</Descriptions.Item>
+          <Descriptions.Item label="作者">{detail.author || '-'}</Descriptions.Item>
+          <Descriptions.Item label="分类">{detail.category || '-'}</Descriptions.Item>
+          <Descriptions.Item label="适读年级">{detail.grade_min || '-'}—{detail.grade_max || '-'}</Descriptions.Item>
+          <Descriptions.Item label="上传者">{detail.uploader_name || '-'}</Descriptions.Item>
+          <Descriptions.Item label="内容简介" span={2}><div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}>{detail.description || '-'}</div></Descriptions.Item>
+          <Descriptions.Item label="来源/授权" span={2}><div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}>{detail.source_note || '-'}</div></Descriptions.Item>
+          <Descriptions.Item label="下载权限">{detail.allow_download ? '允许' : '禁止'}</Descriptions.Item>
+          <Descriptions.Item label="提交时间">{detail.created_at ? new Date(detail.created_at).toLocaleString('zh-CN') : '-'}</Descriptions.Item>
+          {detail.reject_reason && <Descriptions.Item label="拒绝原因" span={2}><Text type="danger">{detail.reject_reason}</Text></Descriptions.Item>}
+        </Descriptions>}
+      </Modal>
+      <Modal title="预览电子书" open={!!previewUrl} onCancel={closePreview} footer={null} width={840} destroyOnClose>
+        {previewUrl && <iframe src={previewUrl} title="电子书预览" style={{ width: '100%', height: 640, border: 0 }} />}
+      </Modal>
+      <Modal title="拒绝电子书" open={!!rejectingId} onCancel={() => setRejectingId(null)} onOk={async () => { if (!rejectReason.trim()) { message.warning('请填写拒绝原因'); return; } await review(rejectingId, 'rejected', rejectReason); setRejectingId(null); }} okText="确认拒绝" okButtonProps={{ danger: true }} cancelText="取消">
+        <Input.TextArea rows={4} value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} placeholder="请说明需要补充或修改的内容" />
+      </Modal>
+    </div>
+  );
+}
+
 // ========== API 密钥管理 Tab ==========
 function ApiKeyTab() {
   const [loading, setLoading] = useState(true);
@@ -766,6 +1026,7 @@ function PromptTab() {
   const [editingType, setEditingType] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [versions, setVersions] = useState([]);
 
   const promptTypes = [
     { key: 'homework', icon: <BookOutlined />, color: '#3B82F6', bg: '#eff6ff' },
@@ -786,6 +1047,17 @@ function PromptTab() {
   };
 
   useEffect(() => { fetchPrompts(); }, []);
+  useEffect(() => { adminApi.getPromptVersions().then(setVersions).catch(() => setVersions([])); }, []);
+
+  const createVersion = async (type) => {
+    try {
+      const config = prompts[type];
+      const version = `${new Date().toISOString().slice(0, 10)}-${Date.now().toString().slice(-4)}`;
+      await adminApi.createPromptVersion({ agentType: type === 'learningReport' ? 'report' : type === 'chat' ? 'companion' : type, version, config, changeNote: '从当前配置创建版本' });
+      setVersions(await adminApi.getPromptVersions());
+      message.success('已创建 Prompt 草稿');
+    } catch (error) { message.error(error.message || '创建版本失败'); }
+  };
 
   const startEdit = (type) => {
     setEditingType(type);
@@ -903,6 +1175,24 @@ function PromptTab() {
           );
         })}
       </Row>
+
+      <Card title="Prompt 版本" bordered={false} style={{ borderRadius: 12, marginTop: 20 }} extra={<Text type="secondary">草稿 → 测试 → 发布，可随时回滚</Text>}>
+        <Table
+          size="small"
+          rowKey="id"
+          pagination={false}
+          dataSource={versions}
+          locale={{ emptyText: '迁移 Prompt 版本表后显示生命周期记录' }}
+          columns={[
+            { title: '智能体', dataIndex: 'agent_type', render: (value) => ({ homework: '作业辅导', report: '学习报告', companion: '谈心小屋' }[value] || value) },
+            { title: '版本', dataIndex: 'version' },
+            { title: '状态', dataIndex: 'status', render: (value) => <Tag color={{ draft: 'default', tested: 'blue', published: 'green', archived: 'red' }[value]}>{value}</Tag> },
+            { title: '创建时间', dataIndex: 'created_at', render: (value) => value ? new Date(value).toLocaleString('zh-CN') : '-' },
+            { title: '操作', key: 'actions', render: (_, row) => <Space size={4}>{row.status === 'draft' && <Button size="small" onClick={async () => { await adminApi.testPromptVersion(row.id); setVersions(await adminApi.getPromptVersions()); }}>测试</Button>}{row.status === 'tested' && <Button size="small" type="primary" onClick={async () => { await adminApi.publishPromptVersion(row.id); setVersions(await adminApi.getPromptVersions()); }}>发布</Button>}{row.status === 'published' && <Button size="small" danger onClick={async () => { await adminApi.rollbackPromptVersion(row.id); setVersions(await adminApi.getPromptVersions()); }}>回滚</Button>}</Space> },
+          ]}
+        />
+        <Space wrap style={{ marginTop: 12 }}>{promptTypes.map((type) => <Button key={type.key} size="small" onClick={() => createVersion(type.key)}>从{type.key}配置创建草稿</Button>)}</Space>
+      </Card>
 
       {/* Prompt 编辑弹窗 */}
       <Modal

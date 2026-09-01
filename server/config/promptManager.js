@@ -99,6 +99,33 @@ function getPrompt(type) {
   return prompts[type] || DEFAULT_PROMPTS[type] || null;
 }
 
+// 读取已发布 Prompt；数据库不可用时回退到本地配置，保证旧版本可启动。
+async function getEffectivePrompt(type, { userId = null } = {}) {
+  const agentType = type === 'learningReport' ? 'report' : type === 'chat' ? 'companion' : type;
+  try {
+    const { pool } = require('./database');
+    const [rows] = await pool.query(
+      `SELECT v.config, v.version, d.rollout_percent FROM ai_prompt_deployments d
+       JOIN ai_prompt_versions v ON v.agent_type = d.agent_type AND v.version = d.prompt_version
+       WHERE d.agent_type = ? AND d.rolled_back_at IS NULL
+       ORDER BY d.deployed_at DESC LIMIT 2`, [agentType]
+    );
+    if (rows[0]?.config) {
+      let selected = rows[0];
+      const rollout = Number(rows[0].rollout_percent || 100);
+      if (rollout < 100 && rows[1] && userId != null) {
+        const bucket = [...String(userId)].reduce((sum, char) => (sum * 31 + char.charCodeAt(0)) % 100, 7);
+        if (bucket >= rollout) selected = rows[1];
+      }
+      const config = typeof selected.config === 'string' ? JSON.parse(selected.config) : selected.config;
+      return { ...config, __version: selected.version };
+    }
+  } catch (error) {
+    if (error.code !== 'ER_NO_SUCH_TABLE') console.warn('读取已发布 Prompt 失败:', error.message);
+  }
+  return getPrompt(type);
+}
+
 /**
  * 保存所有 Prompt 到文件
  */
@@ -145,4 +172,4 @@ function resetPrompt(type) {
   return prompts[type];
 }
 
-module.exports = { getPrompts, getPrompt, updatePrompt, resetPrompts, resetPrompt, DEFAULT_PROMPTS };
+module.exports = { getPrompts, getPrompt, getEffectivePrompt, updatePrompt, resetPrompts, resetPrompt, DEFAULT_PROMPTS };
