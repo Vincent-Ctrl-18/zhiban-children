@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Row, Col, Card, message, Spin } from 'antd';
+import { Alert, Button, Row, Col, Card, Spin, Statistic, Tag, Table } from 'antd';
 import {
   TeamOutlined,
   CalendarOutlined,
@@ -24,6 +24,7 @@ const COLORS = {
 
 function GovernmentDashboard() {
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
   const [stats, setStats] = useState({
     totalChildren: 0,
     totalActivities: 0,
@@ -36,9 +37,13 @@ function GovernmentDashboard() {
   const [activityTrend, setActivityTrend] = useState([]);
   const [activityTypes, setActivityTypes] = useState([]);
   const [resourceTypes, setResourceTypes] = useState([]);
+  const [impact, setImpact] = useState(null);
+  const [institutionImpact, setInstitutionImpact] = useState([]);
 
   useEffect(() => {
     fetchData();
+    statisticsApi.getImpact().then(setImpact).catch(() => setImpact(null));
+    statisticsApi.getInstitutionImpact().then(setInstitutionImpact).catch(() => setInstitutionImpact([]));
   }, []);
 
   const fetchData = async () => {
@@ -55,36 +60,21 @@ function GovernmentDashboard() {
       setActivityTrend(trendData);
       setActivityTypes(typesData);
       setResourceTypes(resourceTypesData);
+      setErrorMessage('');
     } catch (error) {
       setStats({
-        totalChildren: 156,
-        totalActivities: 89,
-        totalVolunteers: 45,
-        totalResources: 23,
-        totalInstitutions: 8,
-        monthlyChildren: 12,
-        monthlyActivities: 15,
+        totalChildren: 0,
+        totalActivities: 0,
+        totalVolunteers: 0,
+        totalResources: 0,
+        totalInstitutions: 0,
+        monthlyChildren: 0,
+        monthlyActivities: 0,
       });
-      setActivityTrend([
-        { month: '2024-07', count: 10, participants: 80 },
-        { month: '2024-08', count: 12, participants: 95 },
-        { month: '2024-09', count: 15, participants: 120 },
-        { month: '2024-10', count: 18, participants: 140 },
-        { month: '2024-11', count: 20, participants: 160 },
-        { month: '2024-12', count: 14, participants: 110 },
-      ]);
-      setActivityTypes([
-        { type: 'course', count: 35 },
-        { type: 'entertainment', count: 28 },
-        { type: 'outdoor', count: 18 },
-        { type: 'other', count: 8 },
-      ]);
-      setResourceTypes([
-        { type: 'volunteer', count: 12 },
-        { type: 'course', count: 5 },
-        { type: 'material', count: 4 },
-        { type: 'fund', count: 2 },
-      ]);
+      setActivityTrend([]);
+      setActivityTypes([]);
+      setResourceTypes([]);
+      setErrorMessage(error.message || '暂时无法加载真实统计数据');
     } finally {
       setLoading(false);
     }
@@ -289,6 +279,16 @@ function GovernmentDashboard() {
         <p className="page-subtitle">实时汇总各机构服务数据，综合展示项目整体运行情况</p>
       </div>
 
+      {errorMessage && (
+        <Alert
+          type="warning"
+          showIcon
+          message={errorMessage}
+          action={<Button size="small" onClick={fetchData}>重新加载</Button>}
+          style={{ marginBottom: 20 }}
+        />
+      )}
+
       {/* 核心指标 — 第一行 3 个主指标 */}
       <Row gutter={[20, 20]}>
         <Col xs={24} sm={8}>
@@ -353,6 +353,21 @@ function GovernmentDashboard() {
           </Card>
         </Col>
       </Row>
+
+      <Card title="全站服务成果" extra={<Tag color="green">按成功业务动作统计</Tag>} style={{ marginTop: 20 }}>
+        {impact ? <Row gutter={[16, 16]}>{[
+          ['有效使用次数', impact.metrics.usageCount, '#FF9F43'],
+          ['独立使用人数', impact.metrics.uniqueUsers, '#3B82F6'],
+          ['有效完成次数', impact.metrics.completionCount, '#6c5ce7'],
+          ['课程完成', impact.metrics.completedCourses, '#00b894'],
+          ['作业已解决', impact.metrics.completedHomework, '#8b5cf6'],
+          ['报告生成', impact.metrics.reportsGenerated, '#e17055'],
+        ].map(([title, value, color]) => <Col xs={12} sm={8} md={4} key={title}><Statistic title={title} value={value || 0} valueStyle={{ color }} /></Col>)}</Row> : <Alert type="info" showIcon message="全站成果数据暂不可用" description="后台正在准备首批按日汇总数据。" />}
+      </Card>
+
+      <Card title="机构服务概览" style={{ marginTop: 20 }}>
+        <Table rowKey="institutionId" size="small" pagination={{ pageSize: 8 }} dataSource={institutionImpact} locale={{ emptyText: '暂无按机构汇总数据' }} columns={[{ title: '机构', dataIndex: 'institutionName' }, { title: '有效使用次数', dataIndex: 'usageCount' }, { title: '完成次数', dataIndex: 'completionCount' }, { title: '独立使用人数', dataIndex: 'uniqueUsers' }]} />
+      </Card>
 
       {/* 图表区域 */}
       <Row gutter={[20, 20]} style={{ marginTop: 20 }}>

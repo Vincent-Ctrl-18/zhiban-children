@@ -82,7 +82,8 @@ children/
 │   ├── vite.config.js            # Vite 配置（含代理）
 │   └── package.json
 ├── server/                       # Node.js 后端
-│   ├── routes/                   # 12 个 API 路由模块
+│   ├── routes/                   # API 路由模块
+│   ├── services/                 # AI Provider 与作业会话服务
 │   ├── config/
 │   │   ├── database.js           # MySQL 连接池
 │   │   └── promptManager.js      # AI Prompt 配置引擎
@@ -95,6 +96,8 @@ children/
 │   ├── init.sql                  # 数据库初始化脚本
 │   ├── update_institution_multi_user.sql
 │   ├── update_add_student.sql
+│   ├── update_ai_homework_phase1.sql
+│   ├── update_ai_memory_history.sql
 │   └── update_admin_features.sql
 ├── start.bat                     # Windows 一键启动脚本
 └── README.md
@@ -137,10 +140,16 @@ mysql -u root -p < database/init.sql
 ```bash
 mysql -u root -p zhiban_children < database/update_institution_multi_user.sql
 mysql -u root -p zhiban_children < database/update_add_student.sql
+mysql -u root -p zhiban_children < database/update_ai_homework_phase1.sql
+mysql -u root -p zhiban_children < database/update_ai_phase2.sql
+mysql -u root -p zhiban_children < database/update_ai_memory_history.sql
 mysql -u root -p zhiban_children < database/update_admin_features.sql
+mysql -u root -p zhiban_children < database/update_ebook_resources.sql
 ```
 
 > 💡 `update_admin_features.sql` 中的字段变更也会在后端启动时自动执行，但建议先手动执行确保一致性。
+
+> 📚 `update_ebook_resources.sql` 会为学习资源增加电子书元数据、审核状态和阅读进度字段；新电子书文件默认保存于 `server/private_uploads/books`，通过登录接口在线阅读或下载。
 
 如果使用 MySQL Workbench 或 Navicat 等图形工具，也可以直接打开 SQL 文件后执行。
 
@@ -185,6 +194,23 @@ UPLOAD_DIR=./uploads
 
 # 豆包 AI API 配置（学生端智能服务，选填）
 ARK_API_KEY=your_doubao_api_key_here     # 不填则学生端 AI 功能不可用
+AI_HOMEWORK_DAILY_LIMIT=30
+AI_REPORT_DAILY_LIMIT=3
+AI_COMPANION_DAILY_LIMIT=60
+
+# AI 会话记忆与历史体验
+AI_CONTEXT_TOKEN_BUDGET=6000
+AI_SUMMARY_TRIGGER_MESSAGES=6
+AI_SUMMARY_TRIGGER_TOKENS=3500
+AI_SUMMARY_WORKER=true
+AI_SUMMARY_WORKER_INTERVAL_MS=30000
+AI_SUMMARY_MAX_ATTEMPTS=5
+AI_SUMMARY_STALE_LOCK_MS=300000
+AI_SESSION_SUMMARY_ENABLED=true
+AI_MEMORY_READ_ENABLED=true
+AI_MEMORY_WRITE_ENABLED=true
+AI_MEMORY_TOKEN_BUDGET=1200
+AI_HISTORY_V2_ENABLED=true
 ```
 
 > ⚠️ `.env` 文件包含敏感信息，已在 `.gitignore` 中排除，不会提交到仓库。

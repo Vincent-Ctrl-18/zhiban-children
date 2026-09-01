@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const { recordEvent } = require('../services/eventService');
 
 const router = express.Router();
 
@@ -116,6 +117,8 @@ router.post('/register', async (req, res) => {
           needVerify = await sendVerifyEmail(email, userResult.insertId);
         }
 
+        await recordEvent({ eventName: 'auth_registered', userId: userResult.insertId, userRole: role, institutionId: instResult.insertId });
+
         return res.status(201).json({
           message: '注册成功，机构创建成功',
           userId: userResult.insertId,
@@ -140,6 +143,7 @@ router.post('/register', async (req, res) => {
       needVerify = await sendVerifyEmail(email, result.insertId);
     }
 
+    await recordEvent({ eventName: 'auth_registered', userId: result.insertId, userRole: role, institutionId });
     res.status(201).json({ message: '注册成功', userId: result.insertId, needVerify });
   } catch (error) {
     console.error('注册失败:', error);
@@ -202,6 +206,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
 
+    await recordEvent({ eventName: 'auth_login_succeeded', userId: user.id, userRole: user.role, institutionId });
     res.json({
       message: '登录成功',
       token,

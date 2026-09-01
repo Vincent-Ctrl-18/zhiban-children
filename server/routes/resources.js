@@ -1,6 +1,7 @@
 const express = require('express');
 const { pool } = require('../config/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { recordEvent } = require('../services/eventService');
 
 const router = express.Router();
 
@@ -127,6 +128,8 @@ router.post('/', authenticateToken, requireRole('resource'), async (req, res) =>
         resourceDescription, contactName, contactPhone, contactEmail]
     );
 
+    await recordEvent({ eventName: 'resource_registered', userId, userRole: 'resource', objectId: result.insertId });
+
     res.status(201).json({ message: '资源登记提交成功，等待审核', id: result.insertId });
   } catch (error) {
     console.error('提交资源登记失败:', error);
@@ -175,6 +178,9 @@ router.post('/:id/approve', authenticateToken, requireRole('government'), async 
       [status, req.params.id]
     );
 
+    if (status === 'approved') {
+      await recordEvent({ eventName: 'resource_approved', userId: req.user.id, userRole: 'government', objectId: req.params.id });
+    }
     res.json({ message: status === 'approved' ? '资源已审核通过' : '资源已拒绝' });
   } catch (error) {
     console.error('审核资源失败:', error);

@@ -1,8 +1,38 @@
 const express = require('express');
 const { pool } = require('../config/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { getPublicImpact } = require('../services/metricsService');
 
 const router = express.Router();
+
+// 对外仅返回全局汇总；不返回个人、机构明细或 AI 原始内容。
+router.get('/impact', async (req, res) => {
+  try {
+    const data = await getPublicImpact();
+    res.json({
+      updatedAt: new Date().toISOString(),
+      metrics: data.totals,
+      trend: data.trend,
+      note: '成果数据按成功业务动作统计，按日更新。',
+    });
+  } catch (error) {
+    console.error('获取公开成果统计失败:', error);
+    res.status(error.code === 'ER_NO_SUCH_TABLE' ? 503 : 500).json({ message: '成果数据暂不可用', code: error.code });
+  }
+});
+
+router.get('/impact/institutions', authenticateToken, requireRole('government'), async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT f.institution_id AS institutionId, COALESCE(i.name, '未绑定机构') AS institutionName,
+         SUM(f.usage_count) AS usageCount, SUM(f.completion_count) AS completionCount,
+         SUM(f.unique_users) AS uniqueUsers
+       FROM feature_usage_daily f LEFT JOIN institutions i ON i.id = f.institution_id
+       WHERE f.institution_id <> 0 GROUP BY f.institution_id, i.name ORDER BY usageCount DESC LIMIT 100`
+    );
+    res.json(rows.map((row) => ({ ...row, usageCount: Number(row.usageCount || 0), completionCount: Number(row.completionCount || 0), uniqueUsers: Number(row.uniqueUsers || 0) })));
+  } catch (error) { res.status(error.code === 'ER_NO_SUCH_TABLE' ? 503 : 500).json({ message: '机构成果数据暂不可用', code: error.code }); }
+});
 
 // 获取数据看板统计（公开/政府）
 router.get('/dashboard', authenticateToken, async (req, res) => {

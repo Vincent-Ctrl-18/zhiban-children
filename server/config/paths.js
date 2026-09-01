@@ -7,6 +7,12 @@ const UPLOAD_DIR = path.isAbsolute(configuredUploadDir)
   ? path.normalize(configuredUploadDir)
   : path.resolve(serverRoot, configuredUploadDir);
 
+// 电子书等需要鉴权访问的文件不放在公开的 /uploads 静态目录下。
+const configuredPrivateUploadDir = process.env.PRIVATE_UPLOAD_DIR || path.join(serverRoot, 'private_uploads');
+const PRIVATE_UPLOAD_DIR = path.isAbsolute(configuredPrivateUploadDir)
+  ? path.normalize(configuredPrivateUploadDir)
+  : path.resolve(serverRoot, configuredPrivateUploadDir);
+
 const rawBasePath = process.env.PUBLIC_BASE_PATH || '';
 const PUBLIC_BASE_PATH = rawBasePath && rawBasePath !== '/'
   ? `/${rawBasePath.replace(/^\/+|\/+$/g, '')}`
@@ -43,9 +49,21 @@ const resolveStoredUploadPath = (value) => {
   return resolved;
 };
 
+const resolvePrivateUploadPath = (value) => {
+  const relative = String(value || '').replace(/^[/\\]+/, '');
+  const resolved = path.resolve(PRIVATE_UPLOAD_DIR, relative);
+  const privateRoot = `${path.resolve(PRIVATE_UPLOAD_DIR)}${path.sep}`;
+  if (resolved !== path.resolve(PRIVATE_UPLOAD_DIR) && !resolved.startsWith(privateRoot)) {
+    throw new Error('非法的私有文件路径');
+  }
+  return resolved;
+};
+
 module.exports = {
   PUBLIC_BASE_PATH,
   UPLOAD_DIR,
+  PRIVATE_UPLOAD_DIR,
   resolveStoredUploadPath,
+  resolvePrivateUploadPath,
   toPublicPath,
 };

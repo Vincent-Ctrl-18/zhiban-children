@@ -1,6 +1,7 @@
 const express = require('express');
 const { pool } = require('../config/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { recordEvent } = require('../services/eventService');
 
 const router = express.Router();
 
@@ -158,6 +159,8 @@ router.post('/', authenticateToken, requireRole('institution'), async (req, res)
         startTime, endTime, participantCount || 0, 
         photos ? JSON.stringify(photos) : null, recorderId]
     );
+
+    await recordEvent({ eventName: 'activity_created', userId: recorderId, userRole: 'institution', institutionId, objectId: result.insertId });
 
     res.status(201).json({ message: '活动记录添加成功', id: result.insertId });
   } catch (error) {

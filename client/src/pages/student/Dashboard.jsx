@@ -74,11 +74,11 @@ function StudentDashboard() {
     {
       key: '/student/courses',
       icon: <PlayCircleOutlined style={{ fontSize: 32 }} />,
-      title: '课程资源',
-      desc: '在线观看视频课程，阅读学习资料',
+      title: '学习资源',
+      desc: '观看课程视频，阅读和下载适合你的电子书',
       color: '#4F7942',
       bg: 'linear-gradient(135deg, #c8e6c9 0%, #f1f8f1 100%)',
-      tag: '在线学习',
+      tag: '阅读成长',
     },
   ];
 
