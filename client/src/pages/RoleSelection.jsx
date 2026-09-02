@@ -19,6 +19,7 @@ import {
 import { Button } from 'antd';
 import { withBasePath } from '../utils/paths';
 import { statisticsApi } from '../services/api';
+import { practiceArticles } from '../data/practiceArticles';
 
 const roles = [
   {
@@ -178,10 +179,13 @@ function RoleSelection() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [navScrolled, setNavScrolled] = useState(false);
   const [impact, setImpact] = useState(null);
+  const [transitionRole, setTransitionRole] = useState(null);
+  const [selectedRole, setSelectedRole] = useState('parent');
   const slideTimer = useRef(null);
 
   const handleRoleSelect = (role) => {
-    navigate(`/login/${role}`);
+    setTransitionRole(role);
+    window.setTimeout(() => navigate(`/login/${role}`), 360);
   };
 
   const scrollToRoles = () => {
@@ -229,6 +233,7 @@ function RoleSelection() {
 
   return (
     <div className="homepage">
+      <div className={`role-transition${transitionRole ? ' active' : ''}`} aria-hidden="true"><span>{transitionRole ? '正在打开专属空间' : ''}</span></div>
       {/* ========== Navbar (glass on scroll) ========== */}
       <nav className={`site-navbar${navScrolled ? ' navbar-scrolled' : ''}`}>
         <div className="nav-logo">
@@ -237,6 +242,7 @@ function RoleSelection() {
         </div>
         <div className="nav-links">
           <span className="nav-link" onClick={scrollToRoles}>关于我们</span>
+          <span className="nav-link" onClick={() => navigate('/practice')}>实践专栏</span>
           <span className="nav-link" onClick={() => handleRoleSelect('parent')}>家长端</span>
           <span className="nav-link" onClick={() => handleRoleSelect('institution')}>托管机构</span>
           <span className="nav-link" onClick={() => handleRoleSelect('resource')}>资源方</span>
@@ -302,17 +308,18 @@ function RoleSelection() {
       </section>
 
       {/* ========== Stats Bar (animated counters) ========== */}
-      <RevealSection className="stats-bar-wrapper">
+      {impact && <RevealSection className="stats-bar-wrapper">
         <section className="stats-bar">
-          {impact ? [
+          {[
             { number: String(impact.metrics?.uniqueUsers || 0), label: '独立使用人数' },
             { number: String(impact.metrics?.usageCount || 0), label: '有效服务次数' },
             { number: String(impact.metrics?.completedCourses || 0), label: '课程完成' },
             { number: String(impact.metrics?.completedHomework || 0), label: '作业已解决' },
-          ].map((s, i) => <StatItem key={i} number={s.number} label={s.label} />) : <div style={{ padding: '18px 24px', color: '#6b7280' }}>项目成果数据正在累计，首批汇总完成后展示</div>}
+          ].map((s, i) => <StatItem key={i} number={s.number} label={s.label} />)}
         </section>
-      </RevealSection>
+      </RevealSection>}
 
+      <div className="content-journey">
       {/* ========== Features Section ========== */}
       <div className="features-section-wrapper">
       <section className="features-section">
@@ -327,6 +334,7 @@ function RoleSelection() {
           {features.map((f, i) => (
             <RevealSection key={i} delay={i * 120}>
               <div className="feature-card">
+                <span className="feature-index">0{i + 1}</span>
                 <div className="feature-icon">{f.icon}</div>
                 <h3>{f.title}</h3>
                 <p>{f.desc}</p>
@@ -344,29 +352,38 @@ function RoleSelection() {
             <p className="section-desc">我们为不同角色的用户提供定制化的功能与服务</p>
           </div>
         </RevealSection>
-        <div className="role-cards">
+        <div className="role-tabs" role="tablist">
           {roles.map((role, i) => (
-            <RevealSection key={role.key} delay={i * 100}>
-              <div 
-                className="role-card"
-                onClick={() => handleRoleSelect(role.key)}
-              >
-                <div className="decorative-bar" style={{ background: role.color }} />
-                <div className="icon" style={{ color: role.color, background: role.bg }}>
-                  {role.icon}
-                </div>
-                <h3>{role.title}</h3>
-                <p>{role.description}</p>
-                <div style={{ marginTop: 'auto', paddingTop: 20 }}>
-                  <Button type="text" style={{ color: role.color, fontWeight: 600 }}>
-                    进入入口 <RightOutlined />
-                  </Button>
-                </div>
-              </div>
+            <button key={role.key} className={`role-tab${selectedRole === role.key ? ' active' : ''}`} role="tab" aria-selected={selectedRole === role.key} onClick={() => setSelectedRole(role.key)}>
+              <span className="role-tab-icon" style={{ color: role.color }}>{role.icon}</span><strong>{role.title}</strong><small>{String(i + 1).padStart(2, '0')}</small>
+            </button>
+          ))}
+        </div>
+        {(() => { const role = roles.find(item => item.key === selectedRole) || roles[0]; return <div className="role-active-panel" key={role.key} style={{ '--role-color': role.color, '--role-bg': role.bg }}><div className="role-active-copy"><span className="role-active-kicker">{String(roles.indexOf(role) + 1).padStart(2, '0')} / 05 · 当前入口</span><h3>{role.title}</h3><p>{role.description}</p><Button className="role-active-button" onClick={() => handleRoleSelect(role.key)}>进入{role.title} <RightOutlined /></Button></div><div className="role-active-orbit"><div className="role-orbit-dot" /><div className="role-active-icon">{role.icon}</div></div></div>; })()}
+      </section>
+
+      <section className="practice-strip" id="practice">
+        <RevealSection>
+          <div className="practice-strip-heading">
+            <div className="section-header section-header-left"><span className="section-tag">FIELD NOTES · 实践专栏</span><h2 className="section-title">来自 11 个地方的真实陪伴记录</h2></div>
+            <Button className="practice-strip-more" onClick={() => navigate('/practice')}>浏览全部记录 <RightOutlined /></Button>
+          </div>
+        </RevealSection>
+        <div className="practice-strip-list">
+          {practiceArticles.slice(0, 4).map((article, index) => (
+            <RevealSection key={article.id} delay={index * 70}>
+              <a className={`practice-strip-row${index === 2 ? ' featured' : ''}`} href={article.url} target="_blank" rel="noreferrer">
+                <span className="practice-strip-location"><strong>{String(index + 1).padStart(2, '0')}</strong><small>{article.place}</small></span>
+                <span className="practice-strip-thumb"><img src={article.cover} alt="" loading="lazy" /></span>
+                <div className="practice-strip-copy"><small>{article.category}</small><h3>{article.title}</h3></div>
+                <RightOutlined />
+              </a>
             </RevealSection>
           ))}
         </div>
       </section>
+
+      </div>
 
       {/* ========== CTA Section with parallax bg ========== */}
       <section className="cta-section" style={{ backgroundImage: `url(${withBasePath('/show-image2.jpg')})` }}>
