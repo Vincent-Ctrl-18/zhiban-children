@@ -25,6 +25,7 @@ import {
 
 // 页面组件
 import RoleSelection from './pages/RoleSelection';
+import Practice from './pages/Practice';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import InstitutionDashboard from './pages/institution/Dashboard';
@@ -173,6 +174,7 @@ function App() {
     return (
       <Routes>
         <Route path="/" element={<RoleSelection />} />
+        <Route path="/practice" element={<Practice />} />
         <Route path="/login/:role" element={<Login onLogin={handleLogin} />} />
         <Route path="/register/:role" element={<Register onLogin={handleLogin} />} />
         <Route path="/verify-email" element={<VerifyEmail onLogin={handleLogin} />} />
