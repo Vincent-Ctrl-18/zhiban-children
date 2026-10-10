@@ -137,7 +137,7 @@ async function refreshSessionSummary({ userId, sessionId, force = false } = {}) 
   ];
   let providerResult;
   try {
-    providerResult = await aiProvider.callDoubaoAPI(messages, 900, 0.2, { timeoutMs: 15000, returnMeta: true });
+    providerResult = await aiProvider.callDoubaoAPI(messages, 900, 0.2, { agentType: 'summary', timeoutMs: 15000, returnMeta: true });
   } catch (error) {
     // 摘要不是主请求的硬依赖；保留上一版摘要并由任务重试。
     error.retryable = error.retryable !== false;

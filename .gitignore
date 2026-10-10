@@ -1,5 +1,9 @@
 # 依赖目录
 node_modules/
+server/private_config/
+server/private_uploads/
+.playwright-cli/
+output/playwright/
 
 # 环境变量（敏感信息）
 .env

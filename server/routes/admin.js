@@ -1,8 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../config/database');
-const fs = require('fs');
-const path = require('path');
 const { getPrompts, updatePrompt, resetPrompts, resetPrompt } = require('../config/promptManager');
 const { getProjectMetrics } = require('../services/metricsService');
 const { evaluatePromptVersion } = require('../services/promptEvaluationService');
@@ -325,40 +323,39 @@ router.get('/statistics/companion-risk', authenticateAdmin, async (req, res) => 
   }
 });
 
-// ===== ARK API Key 管理 =====
-router.get('/api-key', authenticateAdmin, (req, res) => {
-  const key = process.env.ARK_API_KEY || '';
-  // 脱敏显示
-  let masked = '';
-  if (key && key !== 'your_doubao_api_key_here') {
-    masked = key.substring(0, 8) + '****' + key.substring(key.length - 4);
-  }
-  res.json({ masked, isSet: key && key !== 'your_doubao_api_key_here' });
-});
-
-router.post('/api-key', authenticateAdmin, (req, res) => {
-  const { apiKey } = req.body;
-  if (!apiKey || !apiKey.trim()) {
-    return res.status(400).json({ message: '请提供有效的 API Key' });
-  }
-  try {
-    // 写入 .env 文件
-    const envPath = path.join(__dirname, '..', '.env');
-    let envContent = fs.readFileSync(envPath, 'utf-8');
-    if (envContent.includes('ARK_API_KEY=')) {
-      envContent = envContent.replace(/ARK_API_KEY=.*/, `ARK_API_KEY=${apiKey.trim()}`);
-    } else {
-      envContent += `\nARK_API_KEY=${apiKey.trim()}\n`;
-    }
-    fs.writeFileSync(envPath, envContent, 'utf-8');
-    // 同时更新内存中的环境变量
-    process.env.ARK_API_KEY = apiKey.trim();
-    res.json({ message: 'API Key 已更新，即时生效' });
-  } catch (error) {
-    console.error('更新 API Key 失败:', error);
-    res.status(500).json({ message: '更新失败' });
-  }
-});
+// Model configurations are shared by all AI entry points.
+const modelConfigs = require('../config/modelConfigs');
+const { callModelAPI, streamModelAPI } = require('../services/aiProvider');
+const configHandler = fn => async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try { await fn(req, res); }
+  catch (error) { res.status(error.status || 500).json({ message: error.status ? error.message : '模型配置操作失败，请检查服务器配置目录权限' }); }
+};
+router.get('/model-configs', authenticateAdmin, configHandler((req, res) => res.json(modelConfigs.list())));
+router.patch('/model-configs/assignments', authenticateAdmin, configHandler((req, res) => res.json(modelConfigs.assign(req.body))));
+router.post('/model-configs', authenticateAdmin, configHandler((req, res) => res.status(201).json(modelConfigs.save(req.body))));
+router.put('/model-configs/:id', authenticateAdmin, configHandler((req, res) => res.json(modelConfigs.save(req.body, req.params.id))));
+router.post('/model-configs/:id/activate', authenticateAdmin, configHandler((req, res) => res.json(modelConfigs.activate(req.params.id))));
+router.delete('/model-configs/:id', authenticateAdmin, configHandler((req, res) => res.json(modelConfigs.remove(req.params.id))));
+async function testModel(req, res, configId) {
+  const started = Date.now();
+  const invoke = req.body.stream === true ? streamModelAPI : callModelAPI;
+  const result = await invoke([{ role: 'user', content: '请只回复：连接成功' }], 64, 0.2, { configId, timeoutMs: 20000, returnMeta: true });
+  res.json({ success: true, message: '连接成功', model: result.model, latencyMs: Date.now() - started });
+}
+router.post('/model-configs/:id/test', authenticateAdmin, configHandler((req, res) => testModel(req, res, req.params.id)));
+// Compatibility endpoints use the active configuration, without rewriting .env.
+router.get('/api-key', authenticateAdmin, configHandler((req, res) => {
+  const state = modelConfigs.list();
+  const active = state.configs.find(c => c.id === state.activeId);
+  res.json({ masked: active?.masked || '', isSet: !!active?.hasKey });
+}));
+router.post('/api-key', authenticateAdmin, configHandler((req, res) => {
+  const active = modelConfigs.get();
+  if (typeof req.body.apiKey !== 'string' || !req.body.apiKey.trim()) return res.status(400).json({ message: '请提供有效的 API Key' });
+  modelConfigs.save({ ...active, apiKey: req.body.apiKey }, active.id);
+  res.json({ message: 'API Key 已更新' });
+}));
 
 // ===== 资源审核相关（复用 resources 表） =====
 // 获取全部资源（管理员视角）
@@ -403,33 +400,7 @@ router.post('/resources/:id/approve', authenticateAdmin, async (req, res) => {
   }
 });
 
-// ===== API Key 连接测试 =====
-router.post('/api-key/test', authenticateAdmin, async (req, res) => {
-  const apiKey = process.env.ARK_API_KEY;
-  if (!apiKey || apiKey === 'your_doubao_api_key_here') {
-    return res.json({ success: false, message: 'API Key 未配置' });
-  }
-  try {
-    let fetchFn;
-    try { fetchFn = (await import('node-fetch')).default; } catch { fetchFn = global.fetch; }
-    const response = await fetchFn('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: 'doubao-seed-1-8-251228',
-        messages: [{ role: 'user', content: '你好' }],
-        max_tokens: 10,
-      }),
-    });
-    if (response.ok) {
-      res.json({ success: true, message: 'API Key 有效，连接正常 ✅' });
-    } else {
-      res.json({ success: false, message: `验证失败 (HTTP ${response.status})` });
-    }
-  } catch (error) {
-    res.json({ success: false, message: `连接失败: ${error.message}` });
-  }
-});
+router.post('/api-key/test', authenticateAdmin, configHandler((req, res) => testModel(req, res)));
 
 // ===== 用户管理 =====
 router.get('/users', authenticateAdmin, async (req, res) => {

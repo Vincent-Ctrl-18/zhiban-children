@@ -9,6 +9,8 @@ const SUMMARY_BUDGET = Math.min(Number(process.env.AI_SUMMARY_TOKEN_BUDGET) || 1
 const MEMORY_BUDGET = Math.min(Number(process.env.AI_MEMORY_TOKEN_BUDGET) || 1200, 1600);
 
 function estimateTokens(value) {
+  // Image base64 length is not text-token usage; reserve a separate visual budget.
+  if (Array.isArray(value)) return value.reduce((sum, part) => sum + (part.type === 'image_url' ? 1200 : estimateTokens(part.text || '')), 0);
   const text = typeof value === 'string' ? value : JSON.stringify(value || '');
   // 中文通常接近一个字符一个 Token；这个估算只用于裁剪安全边界，不用于计费。
   return Math.ceil(Array.from(text).length / 1.5);
@@ -16,8 +18,9 @@ function estimateTokens(value) {
 
 function truncateByTokens(value, budget) {
   const text = String(value || '');
+  if (budget <= 0) return '';
   if (estimateTokens(text) <= budget) return text;
-  const maxChars = Math.max(100, Math.floor(budget * 1.5));
+  const maxChars = Math.max(0, Math.floor(budget * 1.5) - 1);
   return `${Array.from(text).slice(0, maxChars).join('')}…`;
 }
 

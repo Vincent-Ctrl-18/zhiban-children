@@ -17,7 +17,9 @@ test('companion risk classifier routes urgent content to safety flow', () => {
 });
 
 test('report parser accepts structured JSON and safely wraps plain text', () => {
-  assert.deepEqual(parseReport('{"summary":"很好","actions":["复习"]}'), { summary: '很好', actions: ['复习'] });
+  assert.equal(parseReport('{"summary":"很好","actions":["复习"]}').summary, '很好');
+  assert.deepEqual(parseReport('{"summary":"很好","actions":["复习"]}').actions, ['复习']);
+  assert.deepEqual(parseReport('{"summary":{},"actions":"bad","observations":[null]}').actions, []);
   const plain = parseReport('暂时没有足够数据');
   assert.equal(plain.summary, '暂时没有足够数据');
   assert.ok(Array.isArray(plain.evidence));

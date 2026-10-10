@@ -86,7 +86,7 @@ function eventDefinitions() {
   return EVENT_DEFINITIONS;
 }
 
-async function recordModelCall({ requestId = null, sessionId = null, userId = null, agentType, provider = 'doubao', model = null, status, latencyMs = null, inputTokens = null, outputTokens = null, errorCode = null, connection = pool } = {}) {
+async function recordModelCall({ requestId = null, sessionId = null, userId = null, agentType, provider = 'openai-compatible', model = null, status, latencyMs = null, inputTokens = null, outputTokens = null, errorCode = null, connection = pool } = {}) {
   if (process.env.NODE_ENV !== 'production') return false;
   try {
     await connection.query(
