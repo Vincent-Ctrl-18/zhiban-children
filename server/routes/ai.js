@@ -111,7 +111,7 @@ router.post('/homework', authenticateToken, requireRole('student'), async (req, 
       messages.push({ role: 'user', content: question });
     }
 
-    const reply = await callDoubaoAPI(messages, promptConfig.maxTokens, promptConfig.temperature);
+    const reply = await callDoubaoAPI(messages, promptConfig.maxTokens, promptConfig.temperature, { agentType: 'homework' });
     res.json({ reply });
   } catch (error) {
     console.error('作业辅导接口错误:', error);
@@ -143,7 +143,7 @@ router.post('/learning-report', authenticateToken, requireRole('student'), async
       { role: 'user', content: userContent },
     ];
 
-    const reply = await callDoubaoAPI(messages, promptConfig.maxTokens, promptConfig.temperature);
+    const reply = await callDoubaoAPI(messages, promptConfig.maxTokens, promptConfig.temperature, { agentType: 'report' });
     res.json({ reply });
   } catch (error) {
     console.error('学习报告接口错误:', error);
@@ -270,6 +270,7 @@ router.post('/homework/sessions/stream', authenticateToken, requireRole('student
       requestId: req.body.requestId,
       signal: controller.signal,
       onDelta: async (delta) => write('delta', { text: delta }),
+      onStarted: async (data) => write('session', data),
     });
     write('done', result);
     res.end();
@@ -355,6 +356,7 @@ router.post(
         requestId: req.body.requestId,
         signal: controller.signal,
         onDelta: async (delta) => write('delta', { text: delta }),
+      onStarted: async (data) => write('session', data),
       });
       write('done', result);
       res.end();

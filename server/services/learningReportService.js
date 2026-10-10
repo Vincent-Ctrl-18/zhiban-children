@@ -11,7 +11,11 @@ function parseReport(raw) {
   const text = String(raw || '').trim();
   try {
     const parsed = JSON.parse(text.replace(/^```json\s*/i, '').replace(/```$/i, '').trim());
-    if (parsed && typeof parsed === 'object') return parsed;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const safeText = value => typeof value === 'string' ? value : '';
+      const safeList = value => Array.isArray(value) ? value.map(item => typeof item === 'string' ? item : safeText(item?.text) || safeText(item?.source)).filter(Boolean) : [];
+      return { summary: safeText(parsed.summary), evidence: safeList(parsed.evidence), observations: safeList(parsed.observations), actions: safeList(parsed.actions), nextCheck: safeText(parsed.nextCheck), limitations: safeText(parsed.limitations) };
+    }
   } catch {}
   return { summary: text, evidence: [], observations: [], actions: [], nextCheck: '', limitations: '以上建议基于当前记录，数据较少时请结合老师和家长观察。' };
 }
@@ -71,10 +75,10 @@ async function generateLearningReport({ userId, input = {} }) {
   const startedAt = Date.now();
   let providerResult;
   try {
-    providerResult = await aiProvider.callDoubaoAPI(messages, prompt.maxTokens, prompt.temperature, { timeoutMs: 45000, returnMeta: true });
+    providerResult = await aiProvider.callDoubaoAPI(messages, prompt.maxTokens, prompt.temperature, { agentType: 'report', timeoutMs: 45000, returnMeta: true });
     await recordModelCall({ requestId, userId, agentType: 'report', model: providerResult.model || null, status: 'success', latencyMs: Date.now() - startedAt, inputTokens: providerResult.inputTokens, outputTokens: providerResult.outputTokens });
   } catch (error) {
-    await recordModelCall({ requestId, userId, agentType: 'report', model: process.env.ARK_MODEL || null, status: 'failure', latencyMs: Date.now() - startedAt, errorCode: error.code });
+    await recordModelCall({ requestId, userId, agentType: 'report', model: error.model || null, status: 'failure', latencyMs: Date.now() - startedAt, errorCode: error.code });
     throw error;
   }
   const reportJson = parseReport(providerResult.reply || providerResult);

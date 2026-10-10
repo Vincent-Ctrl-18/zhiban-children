@@ -195,6 +195,12 @@ export const adminApi = {
     const token = localStorage.getItem('adminToken');
     return api.get('/admin/api-key', { headers: { Authorization: `Bearer ${token}` } });
   },
+  assignModels: (assignments) => api.patch('/admin/model-configs/assignments', assignments, { headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` } }),
+  getModelConfigs: () => api.get('/admin/model-configs', { headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` } }),
+  saveModelConfig: (id, values) => api[id ? 'put' : 'post'](`/admin/model-configs${id ? '/' + id : ''}`, values, { headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` } }),
+  activateModelConfig: (id) => api.post(`/admin/model-configs/${id}/activate`, {}, { headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` } }),
+  deleteModelConfig: (id) => api.delete(`/admin/model-configs/${id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` } }),
+  testModelConfig: (id, stream = false) => api.post(`/admin/model-configs/${id}/test`, { stream }, { headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` }, timeout: 25000 }),
   updateApiKey: (apiKey) => {
     const token = localStorage.getItem('adminToken');
     return api.post('/admin/api-key', { apiKey }, { headers: { Authorization: `Bearer ${token}` } });

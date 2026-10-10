@@ -19,6 +19,8 @@ test('memory keys are deterministic and sensitive or prompt-like content is reje
 
 test('context token helpers keep a deterministic safety bound', () => {
   assert.ok(estimateTokens('你好') >= 1);
+  assert.equal(estimateTokens([{ type: 'image_url', image_url: { url: 'a'.repeat(100000) } }]), 1200);
+  assert.ok(estimateTokens(truncateByTokens('一'.repeat(1000), 3)) <= 3);
   assert.ok(truncateByTokens('一'.repeat(1000), 100).length < 1000);
   const selection = selectMemoriesWithinBudget([
     { type: 'learning_goal', subject: '数学', content: '提高数学成绩' },

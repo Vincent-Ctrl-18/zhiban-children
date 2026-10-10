@@ -65,7 +65,7 @@ function AdminPanel({ onLogout }) {
     { key: 'users', icon: <TeamOutlined />, label: '用户管理' },
     { key: 'audit', icon: <AuditOutlined />, label: '资源审核' },
     { key: 'ebooks', icon: <ReadOutlined />, label: '电子书审核' },
-    { key: 'apikey', icon: <KeyOutlined />, label: 'API 密钥' },
+    { key: 'apikey', icon: <KeyOutlined />, label: '大模型配置' },
     { key: 'prompts', icon: <MessageOutlined />, label: 'AI Prompt' },
   ];
 
@@ -74,6 +74,7 @@ function AdminPanel({ onLogout }) {
       <Sider
         collapsible collapsed={collapsed} onCollapse={setCollapsed}
         width={200}
+        breakpoint="md" collapsedWidth={0}
         style={{ background: '#fff', borderRight: '1px solid #f0f0f0' }}
         theme="light"
       >
@@ -99,14 +100,14 @@ function AdminPanel({ onLogout }) {
           </Button>
         </div>
       </Sider>
-      <Layout>
+      <Layout style={{ minWidth: 0 }}>
         <Header style={{ background: '#fff', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-          <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
             {activeTab === 'dashboard' && <><BarChartOutlined style={{ color: '#6c5ce7' }} /> 数据总览</>}
             {activeTab === 'users' && <><TeamOutlined style={{ color: '#6c5ce7' }} /> 用户管理</>}
             {activeTab === 'audit' && <><AuditOutlined style={{ color: '#6c5ce7' }} /> 资源审核</>}
             {activeTab === 'ebooks' && <><ReadOutlined style={{ color: '#6c5ce7' }} /> 电子书审核</>}
-            {activeTab === 'apikey' && <><KeyOutlined style={{ color: '#6c5ce7' }} /> API 密钥管理</>}
+            {activeTab === 'apikey' && <><KeyOutlined style={{ color: '#6c5ce7' }} /> 大模型配置</>}
             {activeTab === 'prompts' && <><MessageOutlined style={{ color: '#6c5ce7' }} /> AI Prompt 管理</>}
           </Title>
           <Space>
@@ -114,7 +115,7 @@ function AdminPanel({ onLogout }) {
             <Text type="secondary">开发者模式</Text>
           </Space>
         </Header>
-        <Content style={{ padding: 24, background: '#f5f6fa' }}>
+        <Content style={{ padding: 'clamp(12px, 3vw, 24px)', minWidth: 0, background: '#f5f6fa' }}>
           {activeTab === 'dashboard' && <DashboardTab />}
           {activeTab === 'users' && <UsersTab />}
           {activeTab === 'audit' && <AuditTab />}
@@ -881,141 +882,86 @@ function EbookAuditTab() {
 
 // ========== API 密钥管理 Tab ==========
 function ApiKeyTab() {
+  const [state, setState] = useState({ configs: [], activeId: null });
   const [loading, setLoading] = useState(true);
-  const [keyInfo, setKeyInfo] = useState({ masked: '', isSet: false });
-  const [newKey, setNewKey] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState(null);
-
-  const fetchKey = async () => {
+  const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState({});
+  const [result, setResult] = useState(null);
+  const [loadError, setLoadError] = useState('');
+  const load = async () => {
     setLoading(true);
-    try {
-      const data = await adminApi.getApiKey();
-      setKeyInfo(data);
-    } catch (error) {
-      message.error('获取 API Key 状态失败');
-    } finally {
-      setLoading(false);
-    }
+    try { setState(await adminApi.getModelConfigs()); setLoadError(''); }
+    catch (error) { setLoadError(error.message || '配置加载失败'); }
+    finally { setLoading(false); }
   };
-
-  useEffect(() => { fetchKey(); }, []);
-
-  const handleSave = async () => {
-    if (!newKey.trim()) {
-      message.warning('请输入 API Key');
-      return;
-    }
-    setSaving(true);
-    try {
-      await adminApi.updateApiKey(newKey.trim());
-      message.success('API Key 已更新，即时生效');
-      setNewKey('');
-      fetchKey();
-    } catch (error) {
-      message.error('更新失败：' + (error.message || '未知错误'));
-    } finally {
-      setSaving(false);
-    }
+  useEffect(() => { load(); }, []);
+  const act = async (operation, success) => {
+    setBusy(true);
+    try { setState(await operation()); setResult(null); message.success(success); return true; }
+    catch (error) { message.error(error.message || '操作失败'); return false; }
+    finally { setBusy(false); }
   };
-
-  const handleTest = async () => {
-    setTesting(true);
-    setTestResult(null);
+  const test = async (config, stream) => {
+    setBusy(true); setResult(null);
     try {
-      const result = await adminApi.testApiKey();
-      setTestResult(result);
-    } catch (error) {
-      setTestResult({ success: false, message: error.message || '测试请求失败' });
-    } finally {
-      setTesting(false);
-    }
+      const data = await adminApi.testModelConfig(config.id, stream);
+      setResult({ success: true, message: config.name + ' · ' + (stream ? '流式' : '普通') + '连接成功 · ' + data.model + ' · ' + data.latencyMs + ' ms' });
+    } catch (error) { setResult({ success: false, message: config.name + '：' + (error.message || '测试失败') }); }
+    finally { setBusy(false); }
   };
-
+  const open = (config = {}) => {
+    setEditing(config.id || 'new');
+    setForm({ name: config.name || '', model: config.model || '', url: config.url || '', apiKey: '', supportsVision: config.supportsVision ?? config.id === 'legacy', sendTemperature: config.sendTemperature !== false, useCompletionTokens: !!config.useCompletionTokens });
+  };
+  const field = (key, value) => setForm(previous => ({ ...previous, [key]: value }));
   return (
-    <div>
-      <Row gutter={[24, 24]}>
-        <Col xs={24} md={14}>
-          <Card title={<span style={{ fontSize: 17, fontWeight: 600 }}><KeyOutlined style={{ color: '#6c5ce7', marginRight: 8 }} />豆包 AI API Key</span>} bordered={false} style={{ borderRadius: 12 }}>
-            <div style={{ marginBottom: 24 }}>
-              <Text type="secondary">当前状态：</Text>
-              {loading ? (
-                <Tag>加载中...</Tag>
-              ) : keyInfo.isSet ? (
-                <Tag color="green">已配置</Tag>
-              ) : (
-                <Tag color="red">未配置</Tag>
-              )}
-              {keyInfo.isSet && (
-                <Text style={{ marginLeft: 12 }} code>{keyInfo.masked}</Text>
-              )}
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <Text strong>更新 API Key：</Text>
-            </div>
-            <Space.Compact style={{ width: '100%' }}>
-              <Input.Password
-                value={newKey}
-                onChange={e => setNewKey(e.target.value)}
-                placeholder="输入新的豆包 API Key"
-                style={{ flex: 1 }}
-              />
-              <Button type="primary" onClick={handleSave} loading={saving}
-                style={{ background: '#6c5ce7', borderColor: '#6c5ce7' }}>
-                保存
-              </Button>
-            </Space.Compact>
-            <div style={{ marginTop: 12 }}>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                更新后即时生效，无需重启服务器。该 Key 用于学生端智能作业辅导、学习报告和谈心伙伴功能。
-              </Text>
-            </div>
-
-            <div style={{ marginTop: 20, padding: 16, background: '#fafafa', borderRadius: 8, border: '1px solid #f0f0f0' }}>
-              <div style={{ marginBottom: 8 }}><Text strong><SafetyOutlined style={{ marginRight: 6 }} />连接测试</Text></div>
-              <Space wrap>
-                <Button onClick={handleTest} loading={testing} disabled={!keyInfo.isSet}>
-                  测试 API Key 连通性
-                </Button>
-                {testResult && (
-                  <Tag color={testResult.success ? 'success' : 'error'} style={{ padding: '4px 12px' }}>
-                    {testResult.message}
-                  </Tag>
-                )}
-              </Space>
-              {!keyInfo.isSet && (
-                <div style={{ marginTop: 8 }}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>请先配置 API Key 后再进行测试</Text>
-                </div>
-              )}
-            </div>
-          </Card>
-        </Col>
-
-        <Col xs={24} md={10}>
-          <Card title={<span style={{ fontSize: 17, fontWeight: 600 }}><FileTextOutlined style={{ color: '#6c5ce7', marginRight: 8 }} />使用说明</span>} bordered={false} style={{ borderRadius: 12 }}>
-            <div style={{ lineHeight: 2 }}>
-              <p><strong>模型：</strong>doubao-seed-1-8-251228</p>
-              <p><strong>接口：</strong>ark.cn-beijing.volces.com</p>
-              <p><strong>功能：</strong></p>
-              <ul style={{ paddingLeft: 20 }}>
-                <li>智能作业辅导（支持图片识别）</li>
-                <li>个性化学习报告生成</li>
-                <li>AI 谈心陪伴</li>
-              </ul>
-              <p><strong>获取方式：</strong></p>
-              <ol style={{ paddingLeft: 20 }}>
-                <li>访问<a href="https://console.volcengine.com/ark" target="_blank" rel="noreferrer"> 火山引擎控制台</a></li>
-                <li>开通模型服务 → 创建 API Key</li>
-                <li>将 Key 粘贴到左侧输入框</li>
-              </ol>
-            </div>
-          </Card>
-        </Col>
-      </Row>
-    </div>
+    <Card title="大模型配置" extra={<Button type="primary" disabled={busy || loading || !!loadError} onClick={() => open()}>新增配置</Button>}>
+      <Alert type="info" showIcon style={{ marginBottom: 20 }} message="支持 OpenAI 兼容 Chat Completions 接口"
+        description="填写服务商提供的模型名和 URL。保存后可分别测试普通与流式连接，再点击启用。启用后新的 AI 请求立即使用该配置；图片作业需要模型支持图片输入。" />
+      {loadError && <Alert type="error" message={loadError} action={<Button onClick={load}>重试</Button>} style={{ marginBottom: 16 }} />}
+      {!state.activeId && !loading && <Alert type="warning" message="尚未启用模型，请保存配置并点击启用。" style={{ marginBottom: 16 }} />}
+      {result && <Alert showIcon type={result.success ? 'success' : 'error'} message={result.message} style={{ marginBottom: 16 }} />}
+      <Space wrap style={{ marginBottom: 20 }}>
+        {[['homework', '作业辅导与图片识别'], ['report', '学习报告'], ['companion', '谈心伙伴'], ['summary', '摘要与记忆整理']].map(([agent, label]) => (
+          <label key={agent}>{label}<Select aria-label={label} style={{ display: 'block', width: 210 }} disabled={busy || loading || !!loadError}
+            value={state.assignments?.[agent] || ''} options={[{ value: '', label: '使用默认模型' }, ...state.configs.map(c => ({ value: c.id, label: c.name }))]}
+            onChange={value => act(() => adminApi.assignModels({ [agent]: value || null }), '任务模型已更新')} /></label>
+        ))}
+      </Space>
+      <Table loading={loading} rowKey="id" dataSource={state.configs} pagination={false} scroll={{ x: 760 }}
+        columns={[
+          { title: '名称', dataIndex: 'name', render: (name, row) => <Space>{name}{row.id === state.activeId && <Tag color="green">使用中</Tag>}</Space> },
+          { title: '模型 / 调用 URL', render: (_, row) => <div style={{ maxWidth: 360, overflowWrap: 'anywhere' }}><strong>{row.model}</strong><div><Text type="secondary">{row.url}</Text></div></div> },
+          { title: 'API Key', dataIndex: 'masked' },
+          { title: '操作', render: (_, row) => <Space wrap>
+            <Button size="small" disabled={busy} onClick={() => open(row)}>编辑</Button>
+            <Button size="small" disabled={busy} onClick={() => test(row, false)}>测试连接</Button>
+            <Button size="small" disabled={busy} onClick={() => test(row, true)}>测试流式</Button>
+            <Button size="small" type="primary" disabled={busy || row.id === state.activeId} onClick={() => act(() => adminApi.activateModelConfig(row.id), '配置已启用')}>启用</Button>
+            <Button size="small" danger disabled={busy || row.id === state.activeId} onClick={() => Modal.confirm({ title: '删除配置“' + row.name + '”？', content: '删除后需要重新填写 Key 才能恢复。', okText: '删除', cancelText: '取消', onOk: () => act(() => adminApi.deleteModelConfig(row.id), '配置已删除') })}>删除</Button>
+          </Space> },
+        ]} />
+      <Modal title={editing === 'new' ? '新增模型配置' : '编辑模型配置'} open={!!editing} onCancel={() => { if (!busy) { setEditing(null); setForm({}); } }}
+        confirmLoading={busy} okText="保存" cancelText="取消" destroyOnClose
+        onOk={async () => {
+          if (!form.name?.trim() || !form.model?.trim() || !form.url?.trim() || (editing === 'new' && !form.apiKey?.trim())) { message.warning('请填写名称、模型名、URL 和 API Key'); return; }
+          if (await act(() => adminApi.saveModelConfig(editing === 'new' ? null : editing, form), '配置已保存')) { setEditing(null); setForm({}); }
+        }}>
+        <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 16 }}>
+          <label htmlFor="model-config-name">配置名称<Input id="model-config-name" maxLength={160} value={form.name} onChange={e => field('name', e.target.value)} placeholder="例如：日常辅导模型" /></label>
+          <label htmlFor="model-config-model">模型名<Input id="model-config-model" maxLength={160} value={form.model} onChange={e => field('model', e.target.value)} placeholder="服务商提供的模型 ID" /></label>
+          <label htmlFor="model-config-url">调用 URL<Input id="model-config-url" value={form.url} onChange={e => field('url', e.target.value)} placeholder="https://服务商地址/v1/chat/completions" /></label>
+          <Text type="secondary">可填写以 /v1 等路径结尾的接口根地址，系统会补上 /chat/completions。</Text>
+          <label htmlFor="model-config-key">API Key<Input.Password id="model-config-key" autoComplete="new-password" value={form.apiKey} onChange={e => field('apiKey', e.target.value)} placeholder={editing === 'new' ? '填写 API Key' : '留空保留原 Key；修改 URL 时须重新填写'} /></label>
+          <Space><Switch aria-label="支持图片输入" checked={form.supportsVision} onChange={v => field('supportsVision', v)} />支持图片输入（用于拍照作业）</Space>
+          <Space><Switch aria-label="发送温度参数" checked={form.sendTemperature} onChange={v => field('sendTemperature', v)} />发送 temperature 参数</Space>
+          <Space><Switch aria-label="使用 max_completion_tokens" checked={form.useCompletionTokens} onChange={v => field('useCompletionTokens', v)} />使用 max_completion_tokens 参数</Space>
+          <Text type="secondary">部分推理模型不接受 temperature，或要求 max_completion_tokens；请按服务商说明调整。</Text>
+          {editing === state.activeId && <Alert type="warning" message="正在编辑使用中的配置，保存后对新请求立即生效。" />}
+        </Space>
+      </Modal>
+    </Card>
   );
 }
 

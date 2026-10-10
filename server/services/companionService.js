@@ -38,7 +38,7 @@ async function refineRiskWithModel(text, ruleRisk, { userId, requestId }) {
     const result = await callDoubaoAPI([
       { role: 'system', content: '你是青少年安全分诊器。只返回 JSON：{"category":"...","severity":"low|medium|high|critical"}，不要复述原文。无法判断时返回 low。' },
       { role: 'user', content: text.slice(0, MAX_MESSAGE_LENGTH) },
-    ], 120, 0, { timeoutMs: 3000, returnMeta: true });
+    ], 120, 0, { agentType: 'companion', timeoutMs: 3000, returnMeta: true });
     const raw = result.reply || result;
     const parsed = JSON.parse(String(raw).replace(/^```json\s*/i, '').replace(/```$/i, '').trim());
     const category = RISK_CATEGORIES.has(parsed.category) ? parsed.category : ruleRisk.category;
@@ -46,7 +46,7 @@ async function refineRiskWithModel(text, ruleRisk, { userId, requestId }) {
     await recordModelCall({ requestId, userId, agentType: 'companion_risk_classifier', model: result.model || null, status: 'success', latencyMs: Date.now() - startedAt, inputTokens: result.inputTokens, outputTokens: result.outputTokens });
     return RISK_ORDER[severity] >= RISK_ORDER[ruleRisk.severity] ? { category, severity, classifier: 'rules+model' } : ruleRisk;
   } catch (error) {
-    await recordModelCall({ requestId, userId, agentType: 'companion_risk_classifier', model: process.env.ARK_MODEL || null, status: 'failure', latencyMs: Date.now() - startedAt, errorCode: error.code || 'RISK_CLASSIFIER_ERROR' });
+    await recordModelCall({ requestId, userId, agentType: 'companion_risk_classifier', model: error.model || null, status: 'failure', latencyMs: Date.now() - startedAt, errorCode: error.code || 'RISK_CLASSIFIER_ERROR' });
     return ruleRisk;
   }
 }
@@ -145,11 +145,11 @@ async function sendCompanionMessage({ userId, institutionId = null, sessionId = 
   if (!reply) {
     try {
       const context = await buildAgentContext({ agentType: 'companion', userId, sessionId: session.id, currentText: text });
-      const providerResult = await callDoubaoAPI(context.messages, context.prompt.maxTokens, context.prompt.temperature, { timeoutMs: 45000, returnMeta: true });
+      const providerResult = await callDoubaoAPI(context.messages, context.prompt.maxTokens, context.prompt.temperature, { agentType: 'companion', timeoutMs: 45000, returnMeta: true });
       reply = providerResult.reply || providerResult;
-      await recordModelCall({ requestId, sessionId: session.id, userId, agentType: 'companion', model: providerResult.model || process.env.ARK_MODEL || null, status: 'success', latencyMs: Date.now() - startedAt, inputTokens: providerResult.inputTokens, outputTokens: providerResult.outputTokens });
+      await recordModelCall({ requestId, sessionId: session.id, userId, agentType: 'companion', model: providerResult.model || null, status: 'success', latencyMs: Date.now() - startedAt, inputTokens: providerResult.inputTokens, outputTokens: providerResult.outputTokens });
     } catch (error) {
-      await recordModelCall({ requestId, sessionId: session.id, userId, agentType: 'companion', model: process.env.ARK_MODEL || null, status: 'failure', latencyMs: Date.now() - startedAt, errorCode: error.code });
+      await recordModelCall({ requestId, sessionId: session.id, userId, agentType: 'companion', model: error.model || null, status: 'failure', latencyMs: Date.now() - startedAt, errorCode: error.code });
       const wrapped = new Error(error.message || '暂时无法回复，请稍后重试');
       wrapped.status = error.status || 502; wrapped.code = error.code || 'AI_PROVIDER_ERROR'; wrapped.retryable = error.retryable !== false; wrapped.details = { sessionId: String(session.id), userMessageId: String(userMessageId), requestId };
       try { await upsertGenerationRequest({ requestId, userId, sessionId: session.id, userMessageId, agentType: 'companion', status: 'failed', errorCode: wrapped.code, latencyMs: Date.now() - startedAt }); } catch (statusError) { console.warn('记录谈心生成状态失败:', statusError.message); }

@@ -1,3 +1,4 @@
+import useSessionDraft from '../../hooks/useSessionDraft';
 import { useState, useRef, useEffect } from 'react';
 import { Alert, Card, Input, Button, Typography, Spin, Space, Tag, Drawer, Empty, List, message } from 'antd';
 import { HeartOutlined, SendOutlined, SmileOutlined, UserOutlined, HeartFilled, StarOutlined, CoffeeOutlined, ThunderboltOutlined, BulbOutlined, PhoneOutlined } from '@ant-design/icons';
@@ -11,7 +12,8 @@ const timeLabel = (value) => new Date(value || Date.now()).toLocaleTimeString('z
 function ChatCompanion() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedSessionId = searchParams.get('sessionId');
-  const [input, setInput] = useState('');
+  const [input, setInput] = useSessionDraft('companion:' + (requestedSessionId || 'recent'));
+  const [sendError, setSendError] = useState('');
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [session, setSession] = useState(null);
@@ -70,7 +72,7 @@ function ChatCompanion() {
     if (!content || loading || initializing || session?.status === 'completed') return;
     const optimistic = { role: 'user', content, time: timeLabel(), pending: true };
     setChatHistory((prev) => [...prev, optimistic]);
-    setInput(''); setLoading(true);
+    setInput(''); setLoading(true); setSendError('');
     try {
       const requestId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const result = session
@@ -85,6 +87,8 @@ function ChatCompanion() {
     } catch (error) {
       setChatHistory((prev) => prev.filter((item) => !item.pending));
       setInput(content);
+      setSendError(error.message || '暂时未能回复，文字已保留，请稍后再试');
+      if (error.data?.sessionId) setSession(previous => previous || { id: error.data.sessionId, status: 'active' });
       if (error.data?.severity === 'high' || error.data?.severity === 'critical') message.warning('请优先联系身边可信任的大人');
       else message.error(error.message || '发送失败，请稍后重试');
     } finally { setLoading(false); }
@@ -134,8 +138,9 @@ function ChatCompanion() {
     <div className="chat-companion-page">
       <div className="page-title-bar">
         <h2><HeartFilled style={{ color: '#ff6b6b' }} /> 谈心伙伴</h2>
-        <Space direction="vertical" align="end" size={4}><Button type="text" onClick={openPrivateHistory}>历史谈心</Button><p className="page-subtitle">可以分享心情，也可以一起想想下一步怎么做</p></Space>
+        <Space direction="vertical" align="end" size={4}><Button type="text" disabled={loading} onClick={openPrivateHistory}>历史谈心</Button><p className="page-subtitle">可以分享心情，也可以一起想想下一步怎么做</p></Space>
       </div>
+      {sendError && <Alert type="error" showIcon message={sendError} description="你输入的文字已恢复，可以修改后再次发送。" style={{ marginBottom: 12 }} />}
       {session?.status === 'completed' && <Alert type="success" showIcon message="这次谈心已结束" description={<Space>你可以回到历史记录查看，也可以开始一段新的对话。<Button size="small" onClick={startNewConversation}>开始新对话</Button></Space>} style={{ marginBottom: 16 }} />}
       <Card className="chat-companion-card" bordered={false} bodyStyle={{ padding: 0, display: 'flex', flexDirection: 'column', height: '65vh' }}>
         <div className="chat-messages" style={{ flex: 1, overflow: 'auto', padding: '20px' }}>
@@ -144,7 +149,7 @@ function ChatCompanion() {
             <div key={`${msg.id || 'local'}-${idx}`} className={`chat-msg ${msg.role === 'user' ? 'chat-msg-user' : 'chat-msg-ai'}`}>
               <div className="chat-avatar">{msg.role === 'user' ? <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#FF9F43', display: 'grid', placeItems: 'center', color: '#fff' }}><UserOutlined /></div> : <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#ffe8e8', display: 'grid', placeItems: 'center', color: '#ff6b6b' }}><HeartFilled /></div>}</div>
               <div className="chat-bubble">
-                <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+                <Paragraph style={{ whiteSpace: 'pre-wrap', marginBottom: 0 }} copyable={msg.role === 'assistant' ? { text: msg.content, tooltips: ['复制回复', '已复制'] } : false}>{msg.content}</Paragraph>
                 {msg.risk?.severity && msg.risk.severity !== 'low' && <Tag color="volcano" style={{ marginTop: 8 }}><PhoneOutlined /> 建议联系可信任的大人</Tag>}
                 <div className="chat-time">{msg.time}</div>
               </div>
@@ -154,7 +159,7 @@ function ChatCompanion() {
           <div ref={chatEndRef} />
         </div>
         {!initializing && chatHistory.length <= 1 && <div style={{ padding: '8px 20px', background: '#fffbf0', borderTop: '1px solid #f0f0f0' }}><Text type="secondary" style={{ fontSize: 12, marginBottom: 6, display: 'block' }}><BulbOutlined style={{ marginRight: 4 }} />试试这些话题：</Text><Space wrap size={[6, 6]}>{quickTopics.map((topic) => <Tag key={topic.text} style={{ cursor: 'pointer', padding: '3px 10px', borderColor: topic.color, color: topic.color }} onClick={() => setInput(topic.text)}>{topic.icon} {topic.text}</Tag>)}</Space></div>}
-        <div style={{ padding: '12px 20px', borderTop: '1px solid #f0f0f0', background: '#fafafa' }}><Space.Compact style={{ width: '100%' }}><TextArea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }} placeholder="说说你的心里话…" autoSize={{ minRows: 1, maxRows: 3 }} style={{ flex: 1, resize: 'none' }} disabled={loading || initializing || session?.status === 'completed'} /><Button type="primary" icon={<SendOutlined />} onClick={handleSend} loading={loading} disabled={initializing || session?.status === 'completed'} style={{ height: 44, background: '#ff6b6b', borderColor: '#ff6b6b' }}>发送</Button></Space.Compact></div>
+        <div style={{ padding: '12px 20px', borderTop: '1px solid #f0f0f0', background: '#fafafa' }}><Space.Compact style={{ width: '100%' }}><TextArea aria-label="谈心消息" maxLength={2000} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229) { e.preventDefault(); handleSend(); } }} placeholder="说说你的心里话…（Shift+Enter 换行）" autoSize={{ minRows: 1, maxRows: 3 }} style={{ flex: 1, resize: 'none' }} disabled={loading || initializing || session?.status === 'completed'} /><Button type="primary" icon={<SendOutlined />} onClick={handleSend} loading={loading} disabled={initializing || !input.trim() || session?.status === 'completed'} style={{ height: 44, background: '#ff6b6b', borderColor: '#ff6b6b' }}>发送</Button></Space.Compact></div>
       </Card>
       {session?.status === 'active' && chatHistory.length > 1 && <Button type="link" onClick={handleComplete} style={{ marginTop: 8 }}>结束这次谈心</Button>}
       <Card bordered={false} style={{ marginTop: 16, borderRadius: 16, background: '#fffbf0' }}><Paragraph style={{ margin: 0, fontSize: 13, color: '#6b7280' }}><BulbOutlined style={{ color: 'var(--primary-color)', marginRight: 4 }} /><strong>温馨提示：</strong>小暖可以陪你梳理心情，但不能代替老师、家长或专业人员。遇到危险请立即联系身边的大人、拨打 110/120；青少年服务 <strong style={{ color: '#ff6b6b' }}>12355</strong>，心理援助 <strong style={{ color: '#ff6b6b' }}>12356</strong>。</Paragraph></Card>

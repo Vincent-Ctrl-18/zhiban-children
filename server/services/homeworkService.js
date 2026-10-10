@@ -421,7 +421,7 @@ async function processProviderRequest({ userId, sessionId, userMessageId, reques
     const messages = context.messages;
     promptConfig = context.promptConfig;
     const providerResult = await aiProvider.callDoubaoAPI(messages, promptConfig.maxTokens, promptConfig.temperature, {
-      timeoutMs: 45000,
+      agentType: 'homework', timeoutMs: 45000,
       returnMeta: true,
     });
     const reply = providerResult.reply || providerResult;
@@ -458,7 +458,7 @@ async function processProviderRequest({ userId, sessionId, userMessageId, reques
     };
   } catch (error) {
     const latencyMs = Date.now() - startedAt;
-    await recordModelCall({ requestId, sessionId, userId, agentType: 'homework', model: aiProvider.DOUBAO_MODEL, status: error.code === 'AI_CANCELLED' ? 'stopped' : 'failure', latencyMs, errorCode: error.code });
+    await recordModelCall({ requestId, sessionId, userId, agentType: 'homework', model: error.model || null, status: error.code === 'AI_CANCELLED' ? 'stopped' : 'failure', latencyMs, errorCode: error.code });
     try {
       await persistRequestResult({
         userId,
@@ -831,7 +831,7 @@ async function createHomeworkRecognition({ userId, file }) {
         { type: 'image_url', image_url: { url: imageUrl } },
         { type: 'text', text: '请识别这道题的完整文字。' },
       ] },
-    ], Math.min(prompt.maxTokens || 1200, 1200), 0.1, { timeoutMs: 45000, returnMeta: true });
+    ], Math.min(prompt.maxTokens || 1200, 1200), 0.1, { agentType: 'homework', timeoutMs: 45000, returnMeta: true });
     await recordModelCall({
       requestId: recognitionId,
       userId,
@@ -850,7 +850,7 @@ async function createHomeworkRecognition({ userId, file }) {
     );
     return { id: recognitionId, imageUrl: toPublicPath(imagePath), recognizedText: String(result || '').trim(), expiresInSeconds: 1800 };
   } catch (error) {
-    await recordModelCall({ requestId: recognitionId, userId, agentType: 'homework_ocr', model: aiProvider.DOUBAO_MODEL, status: 'failure', latencyMs: Date.now() - startedAt, errorCode: error.code });
+    await recordModelCall({ requestId: recognitionId, userId, agentType: 'homework_ocr', model: error.model || null, status: 'failure', latencyMs: Date.now() - startedAt, errorCode: error.code });
     removeUploadedFile(file);
     if (error instanceof HomeworkServiceError) throw error;
     throw new HomeworkServiceError(error.message || '题目识别失败，请稍后重试', { code: error.code || 'OCR_ERROR', status: error.status || 502, retryable: error.retryable !== false });
@@ -932,14 +932,15 @@ async function insertInitialStreamingUserMessage({ userId, question, file, recog
   } finally { connection.release(); }
 }
 
-async function processStreamingProviderRequest({ userId, sessionId, userMessageId, requestId, questionText, onDelta, signal }) {
+async function processStreamingProviderRequest({ userId, sessionId, userMessageId, requestId, questionText, onDelta, onStarted, signal }) {
+  await onStarted?.({ sessionId: String(sessionId), userMessageId: String(userMessageId) });
   const startedAt = Date.now();
   let partialReply = '';
   try {
     const context = await buildModelMessages(sessionId, userId, questionText);
     const { messages, promptConfig } = context;
     const result = await aiProvider.streamDoubaoAPI(messages, promptConfig.maxTokens, promptConfig.temperature, {
-      timeoutMs: 45000,
+      agentType: 'homework', timeoutMs: 45000,
       onDelta: async (delta) => { partialReply += delta; return onDelta?.(delta); },
       signal,
     });
@@ -952,7 +953,7 @@ async function processStreamingProviderRequest({ userId, sessionId, userMessageI
     return { session: serializeSession(session), userMessage: serializeMessage(userMessage), assistantMessage: serializeMessage(assistantMessage), request: { requestId, status: 'succeeded', latencyMs } };
   } catch (error) {
     const latencyMs = Date.now() - startedAt;
-    await recordModelCall({ requestId, sessionId, userId, agentType: 'homework', model: aiProvider.DOUBAO_MODEL, status: error.code === 'AI_CANCELLED' ? 'stopped' : 'failure', latencyMs, errorCode: error.code });
+    await recordModelCall({ requestId, sessionId, userId, agentType: 'homework', model: error.model || null, status: error.code === 'AI_CANCELLED' ? 'stopped' : 'failure', latencyMs, errorCode: error.code });
     try {
       if (error.code === 'AI_CANCELLED') await persistStoppedReply({ userId, sessionId, userMessageId, requestId, reply: partialReply, latencyMs });
       else await persistRequestResult({ userId, sessionId, userMessageId, requestId, latencyMs, error });
@@ -963,7 +964,7 @@ async function processStreamingProviderRequest({ userId, sessionId, userMessageI
   }
 }
 
-async function streamSessionAndProcess({ userId, question, file, recognitionId = null, requestId: rawRequestId, onDelta, signal }) {
+async function streamSessionAndProcess({ userId, question, file, recognitionId = null, requestId: rawRequestId, onDelta, onStarted, signal }) {
   validateQuestionShape(question, file, recognitionId);
   const requestId = makeRequestId(rawRequestId);
   const existing = await findExistingRequest(userId, requestId);
@@ -974,10 +975,10 @@ async function streamSessionAndProcess({ userId, question, file, recognitionId =
   consumeAiQuota(userId, 'homework');
   const inserted = await insertInitialStreamingUserMessage({ userId, question: questionText, file, recognition, requestId });
   if (inserted.duplicate) return resolveExistingRequest(inserted.duplicate, requestId);
-  return processStreamingProviderRequest({ userId, ...inserted, requestId, questionText, onDelta, signal });
+  return processStreamingProviderRequest({ userId, ...inserted, requestId, questionText, onDelta, onStarted, signal });
 }
 
-async function streamMessageAndProcess({ userId, sessionId: rawSessionId, question, file, recognitionId = null, requestId: rawRequestId, onDelta, signal }) {
+async function streamMessageAndProcess({ userId, sessionId: rawSessionId, question, file, recognitionId = null, requestId: rawRequestId, onDelta, onStarted, signal }) {
   validateQuestionShape(question, file, recognitionId);
   const requestId = makeRequestId(rawRequestId);
   const existing = await findExistingRequest(userId, requestId);
@@ -988,7 +989,7 @@ async function streamMessageAndProcess({ userId, sessionId: rawSessionId, questi
   const questionText = normalizeQuestion(recognition?.confirmed_text || question, recognition ? null : file);
   consumeAiQuota(userId, 'homework');
   const inserted = await insertStreamingUserMessage({ userId, sessionId, question: questionText, file, recognitionId, requestId });
-  return processStreamingProviderRequest({ userId, sessionId, userMessageId: inserted.userMessageId, requestId, questionText, onDelta, signal });
+  return processStreamingProviderRequest({ userId, sessionId, userMessageId: inserted.userMessageId, requestId, questionText, onDelta, onStarted, signal });
 }
 
 async function persistStoppedReply({ userId, sessionId, userMessageId, requestId, reply, latencyMs }) {

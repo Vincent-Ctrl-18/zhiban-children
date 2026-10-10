@@ -1,3 +1,4 @@
+import useSessionDraft from '../../hooks/useSessionDraft';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -87,7 +88,10 @@ async function compressImage(file) {
 function HomeworkHelp() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedSessionId = searchParams.get('sessionId');
-  const [question, setQuestion] = useState('');
+  const [question, setQuestion] = useSessionDraft('homework:' + (requestedSessionId || 'recent'));
+  const [feedback, setFeedback] = useState({});
+  const questionRef = useRef(null);
+  const followingRef = useRef(true);
   const [imageFile, setImageFile] = useState(null);
   const [imageUrl, setImageUrl] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -186,7 +190,7 @@ function HomeworkHelp() {
         setRecognition(recognized);
         setQuestion(recognized.recognizedText || '');
       } catch (error) {
-        message.warning(error.message || '题目识别失败，可直接发送图片继续');
+        message.warning((error.message || '题目识别失败') + '。可移除图片后输入题目文字，或重新上传。');
       } finally {
         setRecognizing(false);
         setUploadProgress(null);
@@ -204,7 +208,7 @@ function HomeworkHelp() {
   };
 
   const handleSend = async () => {
-    if (loading) return;
+    if (loading || initializing || recognizing || session?.status === 'completed') return;
     const trimmedQuestion = question.trim();
     if (!trimmedQuestion && !imageFile) {
       message.warning('请输入问题或上传题目图片');
@@ -236,6 +240,7 @@ function HomeworkHelp() {
     setUploadProgress(imageFile ? 0 : null);
     setErrorMessage('');
 
+    let startedSession = null;
     try {
       let sendQuestion = trimmedQuestion;
       if (recognition) {
@@ -256,6 +261,11 @@ function HomeworkHelp() {
           requestId,
           signal: controller.signal,
           onEvent: (event, data) => {
+            if (event === 'session') {
+              startedSession = data;
+              setSession(previous => previous || { id: data.sessionId, status: 'active' });
+              setChatHistory(previous => previous.map(item => item.requestId === requestId ? { ...item, id: data.userMessageId, sessionId: data.sessionId } : item));
+            }
             if (event === 'done') streamedResult = data;
             if (event === 'error') streamError = data;
             if (event === 'delta' && data?.text) {
@@ -274,6 +284,7 @@ function HomeworkHelp() {
           error.retryable = streamError.retryable;
           throw error;
         }
+        if (!streamedResult) throw new Error('连接已中断，请重新尝试');
         result = streamedResult;
       }
 
@@ -285,6 +296,18 @@ function HomeworkHelp() {
       ]);
       clearImage();
     } catch (error) {
+      if (error.name === 'AbortError') {
+        if (!startedSession) {
+          setQuestion(trimmedQuestion);
+          setChatHistory(previous => previous.filter(item => item.requestId !== requestId));
+          setErrorMessage('已停止请求，问题已恢复到输入框。');
+          return;
+        }
+        clearImage();
+        setChatHistory(previous => previous.map(item => item.id === `stream-${requestId}` ? { ...item, status: 'stopped' } : item.requestId === requestId ? { ...item, status: 'stopped' } : item));
+        setErrorMessage('已停止生成，已生成的内容仍保留在这里。');
+        return;
+      }
       setChatHistory((previous) => previous.filter((item) => item.id !== `stream-${requestId}`));
       const details = error.data || {};
       if (details.userMessageId && details.sessionId) {
@@ -379,6 +402,18 @@ function HomeworkHelp() {
     }
   };
 
+  const guide = text => { setQuestion(text); questionRef.current?.focus(); };
+  const sendFeedback = async (item, rating) => {
+    try {
+      await aiApi.homeworkFeedback({ sessionId: item.sessionId || session?.id, messageId: item.id, rating });
+      setFeedback(previous => ({ ...previous, [item.id]: rating }));
+      message.success(rating === 'helpful' ? '谢谢，已记录反馈' : '已记录，你也可以点“换种方式讲”继续学习');
+    } catch (error) { message.error(error.message || '反馈暂时未能保存'); }
+  };
+  useEffect(() => {
+    if (loading && followingRef.current) chatEndRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [chatHistory, loading]);
+
   const stopGeneration = () => streamAbortRef.current?.abort();
 
   const quickQuestions = [
@@ -418,7 +453,7 @@ function HomeworkHelp() {
         bordered={false}
         bodyStyle={{ padding: 0, display: 'flex', flexDirection: 'column', height: '60vh' }}
       >
-        <div className="chat-messages" style={{ flex: 1, overflow: 'auto', padding: '20px' }}>
+        <div className="chat-messages" onScroll={e => { const el = e.currentTarget; followingRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100; }} style={{ flex: 1, overflow: 'auto', padding: '20px' }}>
           {initializing && (
             <div style={{ textAlign: 'center', padding: 48 }}><Spin tip="正在恢复最近的辅导..." /></div>
           )}
@@ -466,11 +501,11 @@ function HomeworkHelp() {
                 {Array.isArray(item.structured?.steps) && <ol style={{ margin: '8px 0 0 20px' }}>{item.structured.steps.map((step, stepIndex) => <li key={stepIndex}>{typeof step === 'string' ? step : step.text || JSON.stringify(step)}</li>)}</ol>}
                 {item.structured?.questionToStudent && <div style={{ marginTop: 8, color: '#4F7942' }}>想一想：{item.structured.questionToStudent}</div>}
                 <div className="chat-time">{item.time}</div>
-                {item.role === 'assistant' && item.id && !String(item.id).startsWith('pending-') && (
+                {item.role === 'assistant' && item.id && !String(item.id).startsWith('pending-') && !String(item.id).startsWith('stream-') && (
                   <Space size={4} style={{ marginTop: 4 }}>
                     <Button type="text" size="small" onClick={() => copyReply(item.content)}>复制</Button>
-                    <Button type="text" size="small" onClick={() => aiApi.homeworkFeedback({ sessionId: item.sessionId, messageId: item.id, rating: 'helpful' })}>有帮助</Button>
-                    <Button type="text" size="small" onClick={() => aiApi.homeworkFeedback({ sessionId: item.sessionId, messageId: item.id, rating: 'not_helpful' })}>需改进</Button>
+                    <Button type="text" size="small" disabled={!!feedback[item.id]} onClick={() => sendFeedback(item, 'helpful')}>{feedback[item.id] === 'helpful' ? '已反馈：有帮助' : '有帮助'}</Button>
+                    <Button type="text" size="small" disabled={!!feedback[item.id]} onClick={() => sendFeedback(item, 'not_helpful')}>{feedback[item.id] === 'not_helpful' ? '已反馈：需改进' : '需改进'}</Button>
                   </Space>
                 )}
                 {item.status === 'failed' && (
@@ -486,6 +521,12 @@ function HomeworkHelp() {
                 )}
                 {item.role === 'assistant' && index === lastAssistantIndex && session?.status === 'active' && !loading && (
                   <div className="homework-complete-action">
+                    <Space wrap style={{ marginTop: 8 }}>
+                      <Button size="small" onClick={() => guide('我还没理解，请用更简单的话和一个生活中的例子讲一遍。')}>换种方式讲</Button>
+                      <Button size="small" onClick={() => guide('先不要告诉我答案，请只给我下一步的小提示。')}>给我一点提示</Button>
+                      <Button size="small" onClick={() => guide('请出一道类似的练习题，先不要给答案，等我作答后再检查。')}>练一道类似题</Button>
+                      <Button size="small" onClick={() => guide('请帮我检查我的解题思路：')}>检查我的思路</Button>
+                    </Space>
                     <Button type="link" size="small" icon={<CheckCircleOutlined />} onClick={handleComplete} loading={completing}>
                       已解决
                     </Button>
@@ -548,10 +589,13 @@ function HomeworkHelp() {
               <Button icon={<CameraOutlined />} style={{ height: 44 }} title="拍照/上传图片" disabled={loading || session?.status === 'completed'}><PictureOutlined /></Button>
             </Upload>
             <TextArea
+              ref={questionRef}
+              aria-label="作业问题"
+              maxLength={2000}
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
+                if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing && event.keyCode !== 229) {
                   event.preventDefault();
                   handleSend();
                 }
@@ -566,7 +610,7 @@ function HomeworkHelp() {
             </Button>
           </Space.Compact>
           <Text type="secondary" style={{ display: 'block', marginTop: 6, fontSize: 12 }}>
-            每次辅导最多 20 次提问；图片会先压缩后安全上传。
+            {question.length}/2000 字 · Enter 发送，Shift+Enter 换行。文字草稿在当前标签页自动保留。
           </Text>
         </div>
       </Card>
